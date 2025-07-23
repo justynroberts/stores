@@ -1,0 +1,22 @@
+[ {
+  "defaultTab" : "nodes",
+  "description" : "",
+  "executionEnabled" : true,
+  "id" : "72e5aa70-b866-48aa-ae3a-e1bd99c9c19f",
+  "loglevel" : "INFO",
+  "name" : "test-delete",
+  "nodeFilterEditable" : false,
+  "plugins" : {
+    "ExecutionLifecycle" : null
+  },
+  "scheduleEnabled" : true,
+  "schedules" : [ ],
+  "sequence" : {
+    "commands" : [ {
+      "exec" : "echo \"test\""
+    } ],
+    "keepgoing" : false,
+    "strategy" : "node-first"
+  },
+  "uuid" : "72e5aa70-b866-48aa-ae3a-e1bd99c9c19f"
+} ]
