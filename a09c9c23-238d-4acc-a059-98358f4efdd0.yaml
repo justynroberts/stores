@@ -1,0 +1,18 @@
+- defaultTab: nodes
+  description: Test
+  executionEnabled: true
+  id: a09c9c23-238d-4acc-a059-98358f4efdd0
+  loglevel: INFO
+  name: Test
+  nodeFilterEditable: false
+  plugins:
+    ExecutionLifecycle: {}
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - exec: echo "test"
+    keepgoing: false
+    strategy: node-first
+  uuid: a09c9c23-238d-4acc-a059-98358f4efdd0
+
