@@ -1,0 +1,133 @@
+- description: 'Analyse les flux vidéo avec l''IA pour détecter anomalies, vols et
+    optimiser la sécurité'
+  executionEnabled: true
+  group: Retail
+  id: de03e968-d9dc-42bd-8d73-7705553655fe
+  loglevel: INFO
+  name: Surveillance Sécurité Intelligente
+  nodeFilterEditable: true
+  notification:
+    onfailure:
+      email:
+        recipients: securite@carrefour.fr
+        subject: ⚠️ Problème système sécurité
+  notifyAvgDurationThreshold: null
+  plugins:
+    ExecutionLifecycle: null
+  schedule:
+    dayofmonth:
+      day: '*'
+    month: '*'
+    time:
+      hour: '20'
+      minute: '00'
+      seconds: '0'
+    year: '*'
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+
+        echo "========================================"
+        echo "🔐 SURVEILLANCE SÉCURITÉ INTELLIGENTE"
+        echo "========================================"
+        echo "Activation du système à $(date)"
+        echo ""
+
+        # État des caméras
+        echo "[$(date +%H:%M:%S)] Vérification du réseau de surveillance..."
+        echo "📹 ÉTAT DES CAMÉRAS"
+        echo "==================="
+        sleep 2
+        echo "Total caméras: 48"
+        echo "🟢 Opérationnelles: 47"
+        echo "🔴 Hors service: 1 (Parking B - Maintenance prévue)"
+        echo "📊 Qualité vidéo: HD 1080p"
+        echo "💾 Espace stockage: 72% disponible"
+        echo ""
+
+        # Analyse IA des incidents
+        echo "[$(date +%H:%M:%S)] Analyse IA des dernières 24h..."
+        echo "🤖 DÉTECTIONS AUTOMATIQUES"
+        echo "=========================="
+        sleep 3
+        echo "⚠️ INCIDENTS DÉTECTÉS:"
+        echo "• 14h32 - Comportement suspect rayon alcools"
+        echo "  → Agent sécurité dispatché → Fausse alerte"
+        echo "• 16h45 - Chute client allée 7"
+        echo "  → Premiers secours alertés → Client OK"
+        echo "• 19h23 - Tentative vol cosmétiques"
+        echo "  → Intervention réussie → Produits récupérés"
+        echo ""
+
+        # Zones à risque
+        echo "[$(date +%H:%M:%S)] Cartographie des zones sensibles..."
+        echo "🗺️ HEAT MAP SÉCURITÉ"
+        echo "====================="
+        sleep 2
+        echo "🔴 Zones critiques (surveillance renforcée):"
+        echo "   - Rayon high-tech: 12 alertes/semaine"
+        echo "   - Cosmétiques: 8 alertes/semaine"
+        echo "   - Alcools premium: 6 alertes/semaine"
+        echo ""
+        echo "🟡 Zones moyennes:"
+        echo "   - Sortie de secours Nord: 3 alertes"
+        echo "   - Zone de chargement: 2 alertes"
+        echo ""
+
+        # Reconnaissance faciale éthique
+        echo "[$(date +%H:%M:%S)] Analyse des profils à risque..."
+        echo "👤 DÉTECTION COMPORTEMENTALE"
+        echo "============================="
+        sleep 2
+        echo "Personnes interdites de magasin: 0 détectée"
+        echo "Comportements atypiques: 3 signalés"
+        echo "Temps d'attente anormal: 2 cas (assistance proposée)"
+        echo "Respect RGPD: ✓ Anonymisation activée"
+        echo ""
+
+        # Optimisation personnel sécurité
+        echo "[$(date +%H:%M:%S)] Recommandations de patrouille..."
+        echo "🚶 OPTIMISATION RONDES"
+        echo "======================"
+        sleep 2
+        echo "Itinéraire optimisé pour cette nuit:"
+        echo "00h00 → Zone high-tech (15 min)"
+        echo "00h20 → Réserves alcools (10 min)"
+        echo "00h35 → Parkings extérieurs (20 min)"
+        echo "01h00 → Quais de chargement (15 min)"
+        echo "01h20 → Tour complet magasin (40 min)"
+        echo "Répéter toutes les 2 heures"
+        echo ""
+
+        # Intégration alarmes
+        echo "[$(date +%H:%M:%S)] Configuration des alarmes..."
+        echo "🚨 SYSTÈME D'ALARME"
+        echo "==================="
+        sleep 1
+        echo "✓ Alarme périmétrique: ARMÉE"
+        echo "✓ Détecteurs volumétriques: ACTIFS"
+        echo "✓ Contacts portes/fenêtres: OK"
+        echo "✓ Liaison centre télésurveillance: ACTIVE"
+        echo "✓ Boutons panique: 12/12 testés OK"
+        echo ""
+
+        # Rapport et prédictions
+        echo "[$(date +%H:%M:%S)] Génération du rapport sécurité..."
+        echo "📊 PRÉDICTIONS IA POUR DEMAIN"
+        echo "============================="
+        sleep 2
+        echo "Risque global: MODÉRÉ (score 3.2/10)"
+        echo "Période sensible: 15h-17h (affluence max)"
+        echo "Zone attention: Entrée principale (embouteillage prévu)"
+        echo "Recommandation: +1 agent période 15h-17h"
+        echo ""
+        echo "✅ Surveillance intelligente activée pour la nuit"
+      scriptInterpreter: bash
+    keepgoing: false
+    strategy: node-first
+  uuid: de03e968-d9dc-42bd-8d73-7705553655fe
+

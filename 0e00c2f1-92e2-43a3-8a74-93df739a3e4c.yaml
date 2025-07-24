@@ -1,0 +1,150 @@
+- description: 'Programme automatique de micro-formations, reconnaissance des performances
+    et boost motivation'
+  executionEnabled: true
+  group: Retail
+  id: 0e00c2f1-92e2-43a3-8a74-93df739a3e4c
+  loglevel: INFO
+  name: Formation et Motivation Équipes
+  nodeFilterEditable: true
+  options:
+  - description: Envoyer SMS de reconnaissance
+    name: send_sms
+    type: Boolean
+    value: 'true'
+  - description: Mettre à jour les scores de gamification
+    name: update_gamification
+    type: Boolean
+    value: 'true'
+  plugins:
+    ExecutionLifecycle: null
+  schedule:
+    dayofmonth:
+      day: '*'
+    month: '*'
+    time:
+      hour: '20'
+      minute: '30'
+      seconds: '0'
+    year: '*'
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+
+        echo "========================================"
+        echo "🎓 FORMATION ET MOTIVATION ÉQUIPES"
+        echo "========================================"
+        echo "Programme du $(date +'%A %d %B %Y')"
+        echo ""
+
+        # Analyse performances jour
+        echo "[$(date +%H:%M:%S)] Analyse des performances du jour..."
+        echo "🏆 TOP PERFORMANCES DU JOUR"
+        echo "============================"
+        sleep 2
+        echo "⭐ EMPLOYÉ DU JOUR: Sophie Martin (Caisse)"
+        echo "   • 487 clients servis (record!)"
+        echo "   • Temps moyen: 1min42s"
+        echo "   • Satisfaction: 98%"
+        echo "   → Récompense: Bon d'achat €20"
+        echo ""
+        echo "🥈 Équipe Fruits/Légumes"
+        echo "   • Zéro rupture maintenue"
+        echo "   • Fraîcheur note: 9.2/10"
+        echo "   → Récompense: Pizza offerte vendredi"
+        echo ""
+
+        # Micro-formations du soir
+        echo "[$(date +%H:%M:%S)] Préparation des micro-formations..."
+        echo "📚 MICRO-FORMATIONS DISPONIBLES"
+        echo "================================"
+        sleep 2
+        echo "CE SOIR (Durée: 10 min chacune):"
+        echo ""
+        echo "1. 'Accueil Client 5 Étoiles' 🌟"
+        echo "   Participants inscrits: 12"
+        echo "   Salle de pause - 20h15"
+        echo ""
+        echo "2. 'Nouveaux Produits Bio' 🌿"
+        echo "   Participants inscrits: 8"
+        echo "   Rayon bio - 20h30"
+        echo ""
+        echo "3. 'Gestes Éco-Responsables' ♻️"
+        echo "   Participants inscrits: 15"
+        echo "   Vidéo e-learning disponible"
+        echo ""
+
+        # Gamification
+        echo "[$(date +%H:%M:%S)] Mise à jour du tableau de gamification..."
+        echo "🎮 CLASSEMENT ÉQUIPES - JUILLET"
+        echo "================================"
+        sleep 2
+        echo "1. 🥇 Caisses Centrales: 2,847 points"
+        echo "2. 🥈 Rayon Frais: 2,654 points"
+        echo "3. 🥉 Boulangerie: 2,598 points"
+        echo "4. Épicerie: 2,412 points"
+        echo "5. Non-alimentaire: 2,387 points"
+        echo ""
+        echo "🎯 Objectif collectif: 15,000 pts = Journée détente!)"
+        echo "Progress: ████████░░ 82%"
+        echo ""
+
+        # Reconnaissance automatique
+        echo "[$(date +%H:%M:%S)] Génération des reconnaissances..."
+        echo "💌 MESSAGES DE RECONNAISSANCE"
+        echo "============================="
+        sleep 2
+        echo "SMS envoyés:"
+        echo "📱 'Bravo Pierre pour ta gestion parfaite du rush!'"
+        echo "📱 'Merci Fatima pour ton sourire contagieux!'"
+        echo "📱 'Super initiative Marc sur le rangement!'"
+        echo ""
+        echo "Tableau d'honneur mis à jour ✓"
+        echo "Photos équipes affichées ✓"
+        echo ""
+
+        # Défis de demain
+        echo "[$(date +%H:%M:%S)] Programmation des défis..."
+        echo "🎯 DÉFIS DE DEMAIN"
+        echo "=================="
+        sleep 2
+        echo "DÉFI ÉQUIPE: 'Zéro Plastique Day'"
+        echo "• Proposer alternatives aux clients"
+        echo "• Équipe gagnante: Journée jean vendredi"
+        echo ""
+        echo "DÉFI INDIVIDUEL: 'Sourire Marathon'"
+        echo "• Client mystère notera les sourires"
+        echo "• Gagnant: Place cinéma x2"
+        echo ""
+
+        # Bien-être équipe
+        echo "[$(date +%H:%M:%S)] Check bien-être des équipes..."
+        echo "💚 BAROMÈTRE BIEN-ÊTRE"
+        echo "======================"
+        sleep 2
+        echo "Humeur générale: 😊 8.2/10 (↑ +0.3)"
+        echo "Fatigue détectée: 3 employés"
+        echo "→ Rotation postes proposée"
+        echo "→ Pause supplémentaire accordée"
+        echo ""
+        echo "Anniversaires cette semaine: 2"
+        echo "→ Gâteau commandé pour vendredi"
+        echo ""
+
+        # Planning formation
+        echo "📅 RAPPEL FORMATIONS SEMAINE"
+        echo "============================"
+        echo "Lun: Sécurité incendie (obligatoire)"
+        echo "Mar: Excel niveau 2 (optionnel)"
+        echo "Jeu: Accueil handicap (obligatoire)"
+        echo "Sam: Leadership bienveillant (managers)"
+        echo ""
+        echo "✅ Programme motivation activé - Équipes boostées!"
+      scriptInterpreter: bash
+    keepgoing: true
+    strategy: node-first
+  uuid: 0e00c2f1-92e2-43a3-8a74-93df739a3e4c
+

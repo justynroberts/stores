@@ -1,0 +1,110 @@
+- description: Coordonne les équipes de nettoyage et vérifie les systèmes de sécurité
+    pour la nuit
+  executionEnabled: true
+  group: Retail
+  id: f95ad622-df28-4ec9-89fe-608684b6f8be
+  loglevel: INFO
+  name: Nettoyage et Maintenance Nocturne
+  nodeFilterEditable: true
+  notification:
+    onsuccess:
+      email:
+        recipients: maintenance@carrefour.fr
+        subject: ✅ Maintenance nocturne terminée
+  notifyAvgDurationThreshold: null
+  plugins:
+    ExecutionLifecycle: null
+  schedule:
+    dayofmonth:
+      day: '*'
+    month: '*'
+    time:
+      hour: '00'
+      minute: '30'
+      seconds: '0'
+    year: '*'
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+
+        echo "========================================"
+        echo "NETTOYAGE ET MAINTENANCE NOCTURNE"
+        echo "========================================"
+        echo "Début des opérations à $(date)"
+        echo ""
+
+        # Vérification présence équipes
+        echo "[$(date +%H:%M:%S)] Vérification des équipes de nettoyage..."
+        sleep 2
+        echo "[$(date +%H:%M:%S)] ✓ Équipe A: 4 personnes présentes"
+        echo "[$(date +%H:%M:%S)] ✓ Équipe B: 3 personnes présentes"
+        echo ""
+
+        # Plan de nettoyage
+        echo "🧹 ZONES À NETTOYER CE SOIR"
+        echo "============================"
+        echo "Priority 1: Rayons alimentaires frais"
+        echo "Priority 2: Caisses et zones de passage"
+        echo "Priority 3: Sanitaires clients"
+        echo "Priority 4: Réserves et zones de stockage"
+        echo ""
+
+        # Démarrage nettoyage
+        echo "[$(date +%H:%M:%S)] Démarrage du nettoyage..."
+        for zone in "Boucherie" "Poissonnerie" "Fruits/Légumes" "Boulangerie"; do
+            echo "[$(date +%H:%M:%S)] 🧹 Nettoyage zone: $zone"
+            sleep 2
+            echo "[$(date +%H:%M:%S)] ✓ $zone - Terminé"
+        done
+        echo ""
+
+        # Contrôle température frigos
+        echo "[$(date +%H:%M:%S)] Vérification des températures..."
+        echo "🌡️ CONTRÔLE CHAÎNE DU FROID"
+        echo "============================"
+        sleep 1
+        echo "Chambre froide viande: 2.1°C ✓"
+        echo "Chambre froide poisson: -0.5°C ✓"
+        echo "Vitrine produits laitiers: 4.2°C ✓"
+        echo "Congélateurs: -18.3°C ✓"
+        echo ""
+
+        # Systèmes de sécurité
+        echo "[$(date +%H:%M:%S)] Test des systèmes de sécurité..."
+        echo "🔒 SÉCURITÉ"
+        echo "============"
+        sleep 2
+        echo "✓ 24 caméras opérationnelles"
+        echo "✓ Alarmes activées zones sensibles"
+        echo "✓ Détecteurs de mouvement OK"
+        echo "✓ Issues de secours dégagées"
+        echo ""
+
+        # Maintenance préventive
+        echo "[$(date +%H:%M:%S)] Maintenance des équipements..."
+        sleep 2
+        echo "🔧 MAINTENANCE EFFECTUÉE"
+        echo "========================"
+        echo "- Nettoyage filtres climatisation"
+        echo "- Vérification éclairage de secours"
+        echo "- Test groupe électrogène: OK"
+        echo "- Défragmentation serveurs caisses"
+        echo ""
+
+        # Rapport final
+        echo "📋 RAPPORT DE FIN"
+        echo "================="
+        echo "Durée totale: 2h30"
+        echo "Incidents: 0"
+        echo "Prochaine maintenance: $(date -d '+7 days' +%Y-%m-%d)"
+        echo ""
+        echo "✅ Nettoyage et maintenance terminés - Magasin prêt pour demain!"
+      scriptInterpreter: bash
+    keepgoing: true
+    strategy: parallel
+  uuid: f95ad622-df28-4ec9-89fe-608684b6f8be
+

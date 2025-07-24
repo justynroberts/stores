@@ -1,0 +1,79 @@
+- description: Génère les rapports de ventes de fin de journée pour tous les magasins
+  executionEnabled: true
+  group: Retail
+  id: 2e6c2338-2472-4800-a8f6-80760f1752f1
+  loglevel: INFO
+  name: Rapport de Ventes Quotidien
+  nodeFilterEditable: true
+  plugins:
+    ExecutionLifecycle: null
+  schedule:
+    dayofmonth:
+      day: '*'
+    month: '*'
+    time:
+      hour: '22'
+      minute: '00'
+      seconds: '0'
+    year: '*'
+  scheduleEnabled: false
+  schedules: []
+  sequence:
+    commands:
+    - interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+
+        echo "========================================"
+        echo "GÉNÉRATEUR DE RAPPORT DE VENTES QUOTIDIEN"
+        echo "========================================"
+        echo "Début de la génération du rapport à $(date)"
+        echo ""
+
+        # Connexion aux systèmes de caisse
+        echo "[$(date +%H:%M:%S)] Connexion aux systèmes de caisse..."
+        sleep 2
+        echo "[$(date +%H:%M:%S)] ✓ Connecté à la caisse du Magasin 0"
+        sleep 1
+        echo "[$(date +%H:%M:%S)] ✓ Connecté à la caisse du Magasin 1"
+        echo ""
+
+        # Collecte des données
+        echo "[$(date +%H:%M:%S)] Collecte des données de ventes..."
+        sleep 3
+        echo "[$(date +%H:%M:%S)] - Magasin 0: Traitement de 1,247 transactions"
+        sleep 2
+        echo "[$(date +%H:%M:%S)] - Magasin 1: Traitement de 982 transactions"
+        echo ""
+
+        # Génération des chiffres de ventes
+        STORE0_SALES=$((20000 + RANDOM % 10000))
+        STORE1_SALES=$((15000 + RANDOM % 8000))
+        TOTAL_SALES=$((STORE0_SALES + STORE1_SALES))
+
+        echo "[$(date +%H:%M:%S)] Calcul des totaux..."
+        sleep 2
+        echo ""
+        echo "📊 RÉSUMÉ DES VENTES DU JOUR"
+        echo "================================"
+        echo "Magasin 0: €$(printf "%'d" $STORE0_SALES)"
+        echo "Magasin 1: €$(printf "%'d" $STORE1_SALES)"
+        echo "--------------------------------"
+        echo "TOTAL:     €$(printf "%'d" $TOTAL_SALES)"
+        echo ""
+
+        # Génération du rapport
+        echo "[$(date +%H:%M:%S)] Génération du rapport PDF..."
+        sleep 3
+        echo "[$(date +%H:%M:%S)] ✓ Rapport généré: rapport_ventes_$(date +%Y%m%d).pdf"
+        echo ""
+        echo "[$(date +%H:%M:%S)] Envoi du rapport par email..."
+        sleep 2
+        echo "[$(date +%H:%M:%S)] ✓ Email envoyé à direction@carrefour.fr"
+        echo ""
+        echo "✅ Rapport de ventes quotidien terminé avec succès!"
+      scriptInterpreter: bash
+    keepgoing: false
+    strategy: node-first
+  uuid: 2e6c2338-2472-4800-a8f6-80760f1752f1
+
