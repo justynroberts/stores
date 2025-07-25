@@ -1,4 +1,5 @@
-- description: 'Analyse les flux vidéo avec l''IA pour détecter anomalies, vols et
+- defaultTab: nodes
+  description: 'Analyse les flux vidéo avec l''IA pour détecter anomalies, vols et
     optimiser la sécurité'
   executionEnabled: true
   group: Retail
@@ -8,9 +9,17 @@
   nodeFilterEditable: true
   notification:
     onfailure:
-      email:
-        recipients: securite@carrefour.fr
-        subject: ⚠️ Problème système sécurité
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onstart:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onsuccess:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
   notifyAvgDurationThreshold: null
   plugins:
     ExecutionLifecycle: null

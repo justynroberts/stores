@@ -1,10 +1,25 @@
-- description: Génère les rapports de ventes de fin de journée pour tous les magasins
+- defaultTab: nodes
+  description: Génère les rapports de ventes de fin de journée pour tous les magasins
   executionEnabled: true
   group: Retail
   id: 2e6c2338-2472-4800-a8f6-80760f1752f1
   loglevel: INFO
   name: Rapport de Ventes Quotidien
   nodeFilterEditable: true
+  notification:
+    onfailure:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onstart:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onsuccess:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+  notifyAvgDurationThreshold: null
   plugins:
     ExecutionLifecycle: null
   schedule:

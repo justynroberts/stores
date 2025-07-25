@@ -1,4 +1,5 @@
-- description: Prépare automatiquement l'ouverture des magasins pour le lendemain
+- defaultTab: nodes
+  description: Prépare automatiquement l'ouverture des magasins pour le lendemain
     matin
   executionEnabled: true
   group: Retail
@@ -6,6 +7,20 @@
   loglevel: INFO
   name: Préparation Ouverture Automatique
   nodeFilterEditable: true
+  notification:
+    onfailure:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onstart:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onsuccess:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+  notifyAvgDurationThreshold: null
   options:
   - description: Activer l'intégration météo
     name: meteo_api

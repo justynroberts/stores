@@ -1,4 +1,5 @@
-- description: 'Contrôle automatique des dates limites, gestion des produits en fin
+- defaultTab: nodes
+  description: 'Contrôle automatique des dates limites, gestion des produits en fin
     de vie et actions anti-gaspillage'
   executionEnabled: true
   group: Retail
@@ -6,6 +7,20 @@
   loglevel: INFO
   name: Gestion Fraîcheur et DLC Automatique
   nodeFilterEditable: true
+  notification:
+    onfailure:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onstart:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onsuccess:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+  notifyAvgDurationThreshold: null
   plugins:
     ExecutionLifecycle: null
   schedule:

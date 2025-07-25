@@ -1,4 +1,5 @@
-- description: 'Programme automatique de micro-formations, reconnaissance des performances
+- defaultTab: nodes
+  description: 'Programme automatique de micro-formations, reconnaissance des performances
     et boost motivation'
   executionEnabled: true
   group: Retail
@@ -6,6 +7,20 @@
   loglevel: INFO
   name: Formation et Motivation Équipes
   nodeFilterEditable: true
+  notification:
+    onfailure:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onstart:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onsuccess:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+  notifyAvgDurationThreshold: null
   options:
   - description: Envoyer SMS de reconnaissance
     name: send_sms

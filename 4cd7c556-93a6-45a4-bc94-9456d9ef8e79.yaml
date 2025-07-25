@@ -1,4 +1,5 @@
-- description: Optimise la consommation énergétique nocturne et génère le rapport
+- defaultTab: nodes
+  description: Optimise la consommation énergétique nocturne et génère le rapport
     RSE quotidien
   executionEnabled: true
   group: Retail
@@ -7,10 +8,18 @@
   name: Gestion Énergie et Développement Durable
   nodeFilterEditable: true
   notification:
+    onfailure:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onstart:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
     onsuccess:
-      email:
-        recipients: 'rse@carrefour.fr,direction@carrefour.fr'
-        subject: 🌱 Rapport RSE quotidien
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
   notifyAvgDurationThreshold: null
   plugins:
     ExecutionLifecycle: null

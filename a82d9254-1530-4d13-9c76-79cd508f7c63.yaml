@@ -1,4 +1,5 @@
-- description: Analyse les données clients du jour avec l'IA pour identifier les tendances
+- defaultTab: nodes
+  description: Analyse les données clients du jour avec l'IA pour identifier les tendances
     et optimiser les promotions
   executionEnabled: true
   group: Retail
@@ -6,6 +7,24 @@
   loglevel: INFO
   name: Analyse Comportement Client IA
   nodeFilterEditable: true
+  notification:
+    onavgduration:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onfailure:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onstart:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onsuccess:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+  notifyAvgDurationThreshold: null
   options:
   - description: Type d'analyse IA à effectuer
     name: analyse_type

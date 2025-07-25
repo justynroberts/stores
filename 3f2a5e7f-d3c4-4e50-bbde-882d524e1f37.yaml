@@ -1,4 +1,5 @@
-- description: 'Synchronise les données entre le siège et tous les magasins, équilibre
+- defaultTab: nodes
+  description: 'Synchronise les données entre le siège et tous les magasins, équilibre
     les stocks inter-magasins'
   executionEnabled: true
   group: Retail
@@ -6,6 +7,20 @@
   loglevel: INFO
   name: Synchronisation Multi-Magasins
   nodeFilterEditable: true
+  notification:
+    onfailure:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onstart:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onsuccess:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+  notifyAvgDurationThreshold: null
   plugins:
     ExecutionLifecycle: null
   schedule:

@@ -1,4 +1,5 @@
-- description: Effectue la clôture de caisse pour tous les magasins et synchronise
+- defaultTab: nodes
+  description: Effectue la clôture de caisse pour tous les magasins et synchronise
     avec le système central
   executionEnabled: true
   group: Retail
@@ -8,13 +9,17 @@
   nodeFilterEditable: true
   notification:
     onfailure:
-      email:
-        recipients: 'operations@carrefour.fr,support@carrefour.fr'
-        subject: ❌ Échec de la clôture de caisse
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onstart:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
     onsuccess:
-      email:
-        recipients: operations@carrefour.fr
-        subject: ✅ Clôture de caisse réussie
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
   notifyAvgDurationThreshold: null
   plugins:
     ExecutionLifecycle: null

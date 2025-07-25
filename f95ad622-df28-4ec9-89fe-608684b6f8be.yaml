@@ -1,4 +1,5 @@
-- description: Coordonne les équipes de nettoyage et vérifie les systèmes de sécurité
+- defaultTab: nodes
+  description: Coordonne les équipes de nettoyage et vérifie les systèmes de sécurité
     pour la nuit
   executionEnabled: true
   group: Retail
@@ -7,10 +8,18 @@
   name: Nettoyage et Maintenance Nocturne
   nodeFilterEditable: true
   notification:
+    onfailure:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onstart:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
     onsuccess:
-      email:
-        recipients: maintenance@carrefour.fr
-        subject: ✅ Maintenance nocturne terminée
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
   notifyAvgDurationThreshold: null
   plugins:
     ExecutionLifecycle: null

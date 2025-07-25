@@ -1,4 +1,5 @@
-- description: Vérifie les niveaux de stock et génère les commandes de réapprovisionnement
+- defaultTab: nodes
+  description: Vérifie les niveaux de stock et génère les commandes de réapprovisionnement
     automatiques
   executionEnabled: true
   group: Retail
@@ -6,6 +7,20 @@
   loglevel: INFO
   name: Contrôle des Stocks Automatique
   nodeFilterEditable: true
+  notification:
+    onfailure:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onstart:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onsuccess:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+  notifyAvgDurationThreshold: null
   options:
   - description: Pourcentage du seuil pour niveau bas
     name: seuil_bas
