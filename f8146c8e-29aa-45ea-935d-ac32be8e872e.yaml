@@ -1,0 +1,66 @@
+- defaultTab: nodes
+  description: Will Pull from Repo Periodically
+  executionEnabled: true
+  group: Admin
+  id: f8146c8e-29aa-45ea-935d-ac32be8e872e
+  loglevel: INFO
+  name: Pull Repo
+  nodeFilterEditable: false
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - autoSecureInput: 'false'
+      passSecureInput: 'false'
+      script: |-
+        # Sample code. No Warranties! Test before deploying to production.
+        import requests
+        # Configuration
+        project = "store"
+        apiToken = "PdIj20uj1WQghQ601q1LPP2H7lErquTH"
+        get_url = f"http://localhost:4440/api/15/project/{project}/scm/import/action/import-jobs/input"
+        post_url = f"http://localhost:4440/api/15/project/{project}/scm/import/action/import-jobs"
+        headers = {
+          'X-Rundeck-Auth-token': apiToken,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        }
+
+        def get_import_items(url, headers):
+            """
+            Performs a GET request to the specified URL and returns the 'importItems'.
+            :param url: The URL for the GET request.
+            :param headers: Headers to include in the request.
+            :return: A list of import items from the response.
+            """
+            response = requests.get(url, headers=headers)
+            if response.status_code == 200:
+                data = response.json()
+                return data.get('importItems', [])
+            else:
+                raise Exception(f"GET request failed with status code {response.status_code}")
+
+        def post_item_ids(item_ids, url, headers):
+            """
+            Sends a POST request with the item IDs.
+            :param item_ids: List of item IDs.
+            :param url: URL for the POST request.
+            :param headers: Headers for the POST request.
+            """
+            payload = {'items': item_ids}
+            response = requests.post(url, headers=headers, json=payload)
+            return response
+
+        # Processing
+        import_items = get_import_items(get_url, headers)
+        item_ids = [item['itemId'] for item in import_items]
+        response = post_item_ids(item_ids, post_url, headers)
+
+        # Output
+        print("Status Code:", response.status_code)
+    keepgoing: false
+    strategy: node-first
+  uuid: f8146c8e-29aa-45ea-935d-ac32be8e872e
+
