@@ -1,5 +1,5 @@
 - defaultTab: nodes
-  description: Will Pull from Repo Periodically
+  description: Will Pull from Repo Automatically
   executionEnabled: true
   group: Admin
   id: f8146c8e-29aa-45ea-935d-ac32be8e872e
