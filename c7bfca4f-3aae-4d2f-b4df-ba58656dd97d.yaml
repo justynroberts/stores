@@ -1,0 +1,86 @@
+- defaultTab: nodes
+  description: Automatically Syncronizes the Github Repository
+  executionEnabled: true
+  group: Admin
+  id: c7bfca4f-3aae-4d2f-b4df-ba58656dd97d
+  loglevel: INFO
+  name: '[Utility] Pull Repo'
+  nodeFilterEditable: false
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - autoSecureInput: 'false'
+      passSecureInput: 'false'
+      script: "# Import all SCM jobs for a Rundeck project\n# This script fetches\
+        \ all available import items from SCM and imports them to Rundeck\n# Usage:\
+        \ python import_rundeck_jobs.py\nimport requests\nimport sys\nimport json\n\
+        from datetime import datetime\n\n# Configuration - Update these values for\
+        \ your environment\nproject = \"store\"  # Your Rundeck project name\nrundeck_url\
+        \ = \"http://localhost:4440\"  # Your Rundeck server URL\napi_version = \"\
+        15\"  # Rundeck API version\napi_token = \"tTbk2JqR1kMCAK3C32OO9mRTbjDHVWLv\"\
+        \  # Your API token\n\n# API endpoints\nget_url = f\"{rundeck_url}/api/{api_version}/project/{project}/scm/import/action/import-jobs/input\"\
+        \npost_url = f\"{rundeck_url}/api/{api_version}/project/{project}/scm/import/action/import-jobs\"\
+        \n\n# Request headers\nheaders = {\n   'X-Rundeck-Auth-token': api_token,\n\
+        \   'Content-Type': 'application/json',\n   'Accept': 'application/json',\n\
+        }\n\ndef get_import_items(url, headers):\n   \"\"\"\n   Retrieves available\
+        \ SCM import items for the project.\n   \n   Args:\n       url: The URL for\
+        \ the GET request\n       headers: Headers to include in the request\n   \
+        \    \n   Returns:\n       A list of import items from the response\n    \
+        \   \n   Raises:\n       Exception: If the request fails or returns unexpected\
+        \ data\n   \"\"\"\n   print(f\"Fetching available import items from SCM repository...\"\
+        )\n   \n   try:\n       response = requests.get(url, headers=headers)\n  \
+        \     response.raise_for_status()  # Raise exception for non-200 status codes\n\
+        \       \n       data = response.json()\n       items = data.get('importItems',\
+        \ [])\n       \n       if not items:\n           print(\"No items available\
+        \ to import.\")\n           return []\n           \n       print(f\"Found\
+        \ {len(items)} items available for import.\")\n       return items\n     \
+        \  \n   except requests.exceptions.RequestException as e:\n       print(f\"\
+        Error fetching import items: {str(e)}\")\n       sys.exit(1)\n   except json.JSONDecodeError:\n\
+        \       print(f\"Error parsing response as JSON.\")\n       sys.exit(1)\n\n\
+        def post_item_ids(item_ids, url, headers):\n   \"\"\"\n   Imports the specified\
+        \ items from SCM to Rundeck.\n   \n   Args:\n       item_ids: List of item\
+        \ IDs to import\n       url: URL for the POST request\n       headers: Headers\
+        \ for the POST request\n       \n   Returns:\n       The response object from\
+        \ the request\n       \n   Raises:\n       Exception: If the request fails\n\
+        \   \"\"\"\n   if not item_ids:\n       print(\"No items to import.\")\n \
+        \      return None\n   \n   print(f\"Importing {len(item_ids)} items from\
+        \ SCM repository...\")\n   \n   payload = {'items': item_ids}\n   \n   try:\n\
+        \       response = requests.post(url, headers=headers, json=payload)\n   \
+        \    response.raise_for_status()  # Raise exception for non-200 status codes\n\
+        \       return response\n   except requests.exceptions.RequestException as\
+        \ e:\n       print(f\"Error importing items: {str(e)}\")\n       if hasattr(e,\
+        \ 'response') and e.response is not None:\n           print(f\"Response content:\
+        \ {e.response.text}\")\n       sys.exit(1)\n\ndef display_results(response,\
+        \ items):\n   \"\"\"\n   Displays a summary of the import operation.\n   \n\
+        \   Args:\n       response: The response object from the import request\n\
+        \       items: The list of items that were attempted to be imported\n   \"\
+        \"\"\n   if response is None:\n       return\n   \n   print(\"\\n----- Import\
+        \ Summary -----\")\n   print(f\"Status Code: {response.status_code}\")\n \
+        \  \n   try:\n       result = response.json()\n       print(f\"Successful\
+        \ imports: {result.get('successCount', 0)}\")\n       print(f\"Failed imports:\
+        \ {result.get('failedCount', 0)}\")\n       \n       # Display list of imported\
+        \ jobs\n       if result.get('successCount', 0) > 0:\n           print(\"\\\
+        nSuccessfully imported jobs:\")\n           for item in items:\n         \
+        \      print(f\" - {item.get('itemId')} ({item.get('jobName', 'Unknown job')})\"\
+        )\n               \n       # Show any errors\n       if result.get('messages',\
+        \ []):\n           print(\"\\nImport messages:\")\n           for msg in result.get('messages',\
+        \ []):\n               print(f\" - {msg}\")\n               \n   except json.JSONDecodeError:\n\
+        \       print(\"Could not parse response as JSON.\")\n       print(f\"Response\
+        \ body: {response.text}\")\n\ndef main():\n   \"\"\"Main function to run the\
+        \ SCM import process.\"\"\"\n   print(f\"=== Rundeck SCM Import Tool ===\"\
+        )\n   print(f\"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\")\n \
+        \  print(f\"Project: {project}\")\n   print(f\"Server: {rundeck_url}\")\n\
+        \   print(\"==============================\\n\")\n   \n   # Get available\
+        \ import items\n   import_items = get_import_items(get_url, headers)\n   \n\
+        \   if not import_items:\n       return\n   \n   # Extract item IDs\n   item_ids\
+        \ = [item['itemId'] for item in import_items]\n   \n   # Import items\n  \
+        \ response = post_item_ids(item_ids, post_url, headers)\n   \n   # Display\
+        \ results\n   display_results(response, import_items)\n   \n   print(\"\\\
+        nImport operation completed.\")\n\nif __name__ == \"__main__\":\n   main()"
+    keepgoing: false
+    strategy: node-first
+  uuid: c7bfca4f-3aae-4d2f-b4df-ba58656dd97d
+
