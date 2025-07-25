@@ -13,6 +13,7 @@
   sequence:
     commands:
     - autoSecureInput: 'false'
+      interpreterArgsQuoted: false
       passSecureInput: 'false'
       script: "# Import all SCM jobs for a Rundeck project\n# This script fetches\
         \ all available import items from SCM and imports them to Rundeck\n# Usage:\
@@ -80,6 +81,7 @@
         \ response = post_item_ids(item_ids, post_url, headers)\n   \n   # Display\
         \ results\n   display_results(response, import_items)\n   \n   print(\"\\\
         nImport operation completed.\")\n\nif __name__ == \"__main__\":\n   main()"
+      scriptInterpreter: python3
     keepgoing: false
     strategy: node-first
   uuid: c7bfca4f-3aae-4d2f-b4df-ba58656dd97d
