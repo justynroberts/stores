@@ -3,15 +3,25 @@
   executionEnabled: true
   id: ce7128c8-5355-48ed-ba63-e3539820334a
   loglevel: INFO
-  name: Daily Failure
+  name: Store Job (Failure)
   nodeFilterEditable: false
+  notification:
+    onfailure:
+      format: json
+      httpMethod: post
+      urls: http://3.81.90.237:5601/carrefour
+    onsuccess:
+      format: json
+      httpMethod: post
+      urls: http://3.81.90.237:5601/carrefour
+  notifyAvgDurationThreshold: null
   plugins:
     ExecutionLifecycle: null
   schedule:
     month: '*'
     time:
-      hour: '0'
-      minute: 0/5
+      hour: '*'
+      minute: 0/7
       seconds: '0'
     weekday:
       day: '*'

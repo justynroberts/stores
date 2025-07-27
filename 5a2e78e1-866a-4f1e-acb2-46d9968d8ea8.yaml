@@ -3,15 +3,25 @@
   executionEnabled: true
   id: 5a2e78e1-866a-4f1e-acb2-46d9968d8ea8
   loglevel: INFO
-  name: Daily Success
+  name: Store Job (Success)
   nodeFilterEditable: false
+  notification:
+    onfailure:
+      format: json
+      httpMethod: post
+      urls: http://3.81.90.237:5601/carrefour
+    onsuccess:
+      format: json
+      httpMethod: post
+      urls: http://3.81.90.237:5601/carrefour
+  notifyAvgDurationThreshold: null
   plugins:
     ExecutionLifecycle: null
   schedule:
     month: '*'
     time:
       hour: '*'
-      minute: 0/4
+      minute: 0/6
       seconds: '0'
     weekday:
       day: '*'

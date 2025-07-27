@@ -6,12 +6,22 @@
   loglevel: INFO
   name: '[Utility] Pull Repo'
   nodeFilterEditable: false
+  notification:
+    onfailure:
+      format: json
+      httpMethod: post
+      urls: http://3.81.90.237:5601/carrefour
+    onsuccess:
+      format: json
+      httpMethod: post
+      urls: http://3.81.90.237:5601/carrefour
+  notifyAvgDurationThreshold: null
   plugins:
     ExecutionLifecycle: null
   schedule:
     month: '*'
     time:
-      hour: '0'
+      hour: '*'
       minute: 0/5
       seconds: '0'
     weekday:
