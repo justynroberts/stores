@@ -8,6 +8,15 @@
   nodeFilterEditable: false
   plugins:
     ExecutionLifecycle: null
+  schedule:
+    month: '*'
+    time:
+      hour: '0'
+      minute: 0/5
+      seconds: '0'
+    weekday:
+      day: '*'
+    year: '*'
   scheduleEnabled: true
   schedules: []
   sequence:
@@ -19,7 +28,7 @@
         \ all available import items from SCM and imports them to Rundeck\n# Usage:\
         \ python import_rundeck_jobs.py\nimport requests\nimport sys\nimport json\n\
         from datetime import datetime\n\n# Configuration - Update these values for\
-        \ your environment\nproject = \"store\"  # Your Rundeck project name\nrundeck_url\
+        \ your environment\nproject = \"store0\"  # Your Rundeck project name\nrundeck_url\
         \ = \"http://localhost:4440\"  # Your Rundeck server URL\napi_version = \"\
         15\"  # Rundeck API version\napi_token = \"tTbk2JqR1kMCAK3C32OO9mRTbjDHVWLv\"\
         \  # Your API token\n\n# API endpoints\nget_url = f\"{rundeck_url}/api/{api_version}/project/{project}/scm/import/action/import-jobs/input\"\
