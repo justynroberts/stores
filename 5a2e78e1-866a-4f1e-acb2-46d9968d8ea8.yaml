@@ -9,11 +9,11 @@
     onfailure:
       format: json
       httpMethod: post
-      urls: http://3.81.90.237:5601/carrefour
+      urls: http://172.31.46.107:9200/carrefour/_doc/
     onsuccess:
       format: json
       httpMethod: post
-      urls: http://3.81.90.237:5601/carrefour
+      urls: http://172.31.46.107:9200/carrefour/_doc/
   notifyAvgDurationThreshold: null
   plugins:
     ExecutionLifecycle: null
