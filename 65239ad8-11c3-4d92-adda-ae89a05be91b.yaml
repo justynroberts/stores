@@ -12,7 +12,7 @@
   schedule:
     month: '*'
     time:
-      hour: '0'
+      hour: '*'
       minute: 0/5
       seconds: '0'
     weekday:
