@@ -1,0 +1,218 @@
+# .github/workflows/promote-to-production.yml
+name: Promote Preproduction to Production
+
+on:
+  push:
+    branches:
+      - preproduction
+
+jobs:
+  deploy-to-production:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+      
+      - name: Get Current Production SHA
+        id: rollback
+        run: |
+          git fetch origin production
+          ROLLBACK_SHA=$(git rev-parse origin/production)
+          echo "sha=$ROLLBACK_SHA" >> $GITHUB_OUTPUT
+          echo "Rollback point: $ROLLBACK_SHA"
+      
+      - name: Check for Existing PR
+        id: check-pr
+        run: |
+          EXISTING_PR=$(gh pr list \
+            --base production \
+            --head preproduction \
+            --state open \
+            --json number \
+            --jq '.[0].number')
+          
+          if [ -n "$EXISTING_PR" ]; then
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "number=$EXISTING_PR" >> $GITHUB_OUTPUT
+            echo "Found existing PR #$EXISTING_PR"
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+            echo "No existing PR found"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Create Pull Request
+        id: create-pr
+        if: steps.check-pr.outputs.found == 'false'
+        run: |
+          # Get changes summary
+          CHANGES=$(git log origin/production..preproduction --oneline --max-count=10)
+          FILES_CHANGED=$(git diff --stat origin/production...preproduction | tail -n1)
+          
+          # Create PR
+          PR_URL=$(gh pr create \
+            --base production \
+            --head preproduction \
+            --title "🚀 Deploy to Production: $(date +'%Y-%m-%d %H:%M')" \
+            --body "$(cat <<EOF
+          ## Automated Production Deployment
+          
+          **Build Number**: ${{ github.run_number }}
+          **Triggered by**: ${{ github.actor }}
+          **Commit**: ${{ github.sha }}
+          
+          ### Summary of Changes
+          $FILES_CHANGED
+          
+          ### Recent Commits
+          \`\`\`
+          $CHANGES
+          \`\`\`
+          
+          ### Rundeck Jobs Modified
+          $(git diff --name-only origin/production...preproduction | grep -E '\.yaml$|\.yml$|\.xml$' | sed 's/^/- /')
+          
+          ### Rollback Instructions
+          If needed, rollback to: \`${{ steps.rollback.outputs.sha }}\`
+          
+          \`\`\`bash
+          git checkout production
+          git reset --hard ${{ steps.rollback.outputs.sha }}
+          git push --force-with-lease origin production
+          \`\`\`
+          
+          ### Pre-Deployment Checklist
+          - [x] Changes tested in preproduction
+          - [x] Automated deployment initiated
+          - [ ] Deployment verified
+          
+          ---
+          *This PR will be automatically merged after validation passes.*
+          EOF
+          )")
+          
+          # Extract PR number from URL
+          PR_NUMBER=$(echo "$PR_URL" | grep -oP '\d+$')
+          echo "number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "Created PR #$PR_NUMBER"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set PR Number
+        id: pr-number
+        run: |
+          if [ "${{ steps.check-pr.outputs.found }}" == "true" ]; then
+            echo "number=${{ steps.check-pr.outputs.number }}" >> $GITHUB_OUTPUT
+          else
+            echo "number=${{ steps.create-pr.outputs.number }}" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Validate Rundeck Jobs
+        id: validate
+        run: |
+          echo "Validating Rundeck job files..."
+          
+          VALIDATION_PASSED=true
+          
+          # Check YAML files
+          for file in $(git diff --name-only origin/production...preproduction | grep -E '\.ya?ml$'); do
+            if [ -f "$file" ]; then
+              echo "Checking $file..."
+              python3 -c "import yaml; yaml.safe_load(open('$file'))" 2>/dev/null || {
+                echo "❌ Invalid YAML in $file"
+                VALIDATION_PASSED=false
+              }
+            fi
+          done
+          
+          # Check XML files
+          for file in $(git diff --name-only origin/production...preproduction | grep '\.xml$'); do
+            if [ -f "$file" ]; then
+              echo "Checking $file..."
+              python3 -c "import xml.etree.ElementTree as ET; ET.parse('$file')" 2>/dev/null || {
+                echo "❌ Invalid XML in $file"
+                VALIDATION_PASSED=false
+              }
+            fi
+          done
+          
+          if [ "$VALIDATION_PASSED" == "true" ]; then
+            echo "✅ All validations passed"
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Validation failed"
+            echo "status=failure" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+      
+      - name: Comment Validation Results
+        if: always()
+        run: |
+          gh pr comment ${{ steps.pr-number.outputs.number }} --body "$(cat <<EOF
+          ## Validation Results
+          
+          **Status**: ${{ steps.validate.outcome == 'success' && '✅ Passed' || '❌ Failed' }}
+          **Run**: [View Details](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          **Time**: $(date +'%Y-%m-%d %H:%M:%S UTC')
+          
+          $(if [ "${{ steps.validate.outcome }}" == "success" ]; then
+            echo "All Rundeck job files validated successfully. Proceeding with auto-merge..."
+          else
+            echo "Validation failed. Please fix the issues and push again."
+          fi)
+          EOF
+          )"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Auto-merge Pull Request
+        if: steps.validate.outcome == 'success'
+        run: |
+          echo "Enabling auto-merge for PR #${{ steps.pr-number.outputs.number }}..."
+          
+          # Enable auto-merge (will merge when all checks pass)
+          gh pr merge ${{ steps.pr-number.outputs.number }} \
+            --auto \
+            --merge \
+            --delete-branch=false \
+            --subject "Auto-merge: Production deployment $(date +'%Y-%m-%d %H:%M')"
+          
+          echo "Auto-merge enabled. PR will merge when all checks pass."
+          
+          # Wait a bit to see if it merges immediately
+          sleep 10
+          
+          # Check merge status
+          PR_STATE=$(gh pr view ${{ steps.pr-number.outputs.number }} --json state --jq '.state')
+          if [ "$PR_STATE" == "MERGED" ]; then
+            echo "✅ PR successfully merged to production!"
+          else
+            echo "⏳ PR is pending merge (waiting for additional checks or approvals)"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Post Deployment Notification
+        if: steps.validate.outcome == 'success'
+        run: |
+          echo "🚀 Deployment to production initiated!"
+          echo "PR: #${{ steps.pr-number.outputs.number }}"
+          echo "Rollback SHA: ${{ steps.rollback.outputs.sha }}"
+          
+          # Add your notification logic here
+          # curl -X POST ${{ secrets.SLACK_WEBHOOK }} \
+          #   -H 'Content-Type: application/json' \
+          #   -d "{\"text\":\"Production deployment initiated via PR #${{ steps.pr-number.outputs.number }}\"}"
