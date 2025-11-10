@@ -1,0 +1,98 @@
+- description: Performs daily backup of all MySQL databases with compression and retention
+    management
+  executionEnabled: true
+  group: MySQL-DBA
+  id: 4d7d5af4-8ada-42a8-9a70-9c009805c847
+  loglevel: INFO
+  name: MySQL - Daily Backup All Databases
+  nodeFilterEditable: true
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: false
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '1'
+    filter: 'tags: mysql-primary'
+  nodesSelectedByDefault: true
+  options:
+  - description: MySQL host address
+    name: db_host
+    required: true
+    value: localhost
+  - description: MySQL backup password (CHANGE THIS!)
+    name: db_password
+    required: true
+    secure: true
+  - description: MySQL backup user
+    name: db_user
+    required: true
+    value: backup_user
+  plugins:
+    ExecutionLifecycle: null
+  schedule:
+    dayofmonth:
+      day: '*'
+    month: '*'
+    time:
+      hour: '02'
+      minute: '00'
+      seconds: '0'
+    year: '*'
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - description: Create backup directory if not exists
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        BACKUP_DIR="/var/backups/mysql/$(date +%Y%m%d)"
+        mkdir -p "$BACKUP_DIR"
+        echo "Backup directory created: $BACKUP_DIR"
+      scriptInterpreter: /bin/bash
+    - description: Backup all databases
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        BACKUP_DIR="/var/backups/mysql/$(date +%Y%m%d)"
+        DB_USER="@@option.db_user@@"
+        DB_PASSWORD="@@option.db_password@@"
+        DB_HOST="@@option.db_host@@"
+
+        echo "Starting MySQL backup for all databases..."
+        mysqldump -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" --all-databases --single-transaction --routines --triggers --events --add-drop-database | gzip > "$BACKUP_DIR/all_databases_$(date +%H%M%S).sql.gz"
+
+        if [ $? -eq 0 ]; then
+            echo "Backup completed successfully"
+            ls -lh "$BACKUP_DIR/all_databases_"*.sql.gz
+        else
+            echo "Backup failed!"
+            exit 1
+        fi
+      scriptInterpreter: /bin/bash
+    - description: Clean up old backups (keep 7 days)
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        find /var/backups/mysql -type d -mtime +7 -exec rm -rf {} + 2>/dev/null
+        echo "Old backups cleaned up (kept last 7 days)"
+      scriptInterpreter: /bin/bash
+    - description: Send backup report
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        BACKUP_DIR="/var/backups/mysql/$(date +%Y%m%d)"
+        BACKUP_SIZE=$(du -sh "$BACKUP_DIR" | cut -f1)
+        BACKUP_COUNT=$(ls -1 "$BACKUP_DIR"/*.sql.gz 2>/dev/null | wc -l)
+
+        echo "=== MySQL Backup Report ==="
+        echo "Date: $(date)"
+        echo "Total backup size: $BACKUP_SIZE"
+        echo "Number of backup files: $BACKUP_COUNT"
+        echo "Backup location: $BACKUP_DIR"
+      scriptInterpreter: /bin/bash
+    keepgoing: false
+    strategy: node-first
+  uuid: 4d7d5af4-8ada-42a8-9a70-9c009805c847
+

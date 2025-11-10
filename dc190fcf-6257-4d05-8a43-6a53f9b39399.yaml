@@ -1,0 +1,119 @@
+- description: Performs comprehensive health checks on MySQL databases including performance
+    metrics and replication status
+  executionEnabled: true
+  group: MySQL-DBA
+  id: dc190fcf-6257-4d05-8a43-6a53f9b39399
+  loglevel: INFO
+  name: MySQL - Health Check and Monitoring
+  nodeFilterEditable: true
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: true
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '5'
+    filter: 'tags: mysql-server'
+  nodesSelectedByDefault: true
+  options:
+  - description: MySQL host address
+    name: db_host
+    required: true
+    value: localhost
+  - description: MySQL monitoring password (CHANGE THIS!)
+    name: db_password
+    required: true
+    secure: true
+  - description: MySQL monitoring user
+    name: db_user
+    required: true
+    value: monitor_user
+  - description: Maximum acceptable replication lag in seconds
+    name: replication_lag_threshold
+    value: '300'
+  plugins:
+    ExecutionLifecycle: null
+  schedule:
+    dayofmonth:
+      day: '*'
+    month: '*'
+    time:
+      hour: '*/1'
+      minute: '00'
+      seconds: '0'
+    year: '*'
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - description: Check MySQL service status
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "=== MySQL Service Status ==="
+        systemctl status mysql | grep -E "Active:|Main PID:"
+        if ! systemctl is-active --quiet mysql; then
+            echo "ERROR: MySQL service is not running!"
+            exit 1
+        fi
+      scriptInterpreter: /bin/bash
+    - description: Check database connections and threads
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        DB_USER="@@option.db_user@@"
+        DB_PASSWORD="@@option.db_password@@"
+        DB_HOST="@@option.db_host@@"
+
+        echo "=== Connection Statistics ==="
+        mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -e "SHOW STATUS WHERE Variable_name IN ('Threads_connected', 'Max_used_connections', 'Aborted_connects', 'Aborted_clients');" 2>/dev/null
+
+        echo -e "\n=== Process List Summary ==="
+        mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -e "SELECT COUNT(*) as count, state FROM information_schema.processlist GROUP BY state ORDER BY count DESC;" 2>/dev/null
+      scriptInterpreter: /bin/bash
+    - description: Check replication status
+      interpreterArgsQuoted: false
+      script: "#!/bin/bash\nDB_USER=\"@@option.db_user@@\"\nDB_PASSWORD=\"@@option.db_password@@\"\
+        \nDB_HOST=\"@@option.db_host@@\"\n\necho \"=== Replication Status ===\"\n\
+        REPL_STATUS=$(mysql -h \"$DB_HOST\" -u \"$DB_USER\" -p\"$DB_PASSWORD\" -e\
+        \ \"SHOW SLAVE STATUS\\G\" 2>/dev/null)\n\nif [ -z \"$REPL_STATUS\" ]; then\n\
+        \    echo \"No replication configured (Master server)\"\nelse\n    echo \"\
+        $REPL_STATUS\" | grep -E \"Slave_IO_Running:|Slave_SQL_Running:|Seconds_Behind_Master:|Last_Error:\"\
+        \n    \n    # Check for replication lag\n    LAG=$(echo \"$REPL_STATUS\" |\
+        \ grep \"Seconds_Behind_Master:\" | awk '{print $2}')\n    if [ \"$LAG\" !=\
+        \ \"NULL\" ] && [ \"$LAG\" -gt \"@@option.replication_lag_threshold@@\" ];\
+        \ then\n        echo \"WARNING: Replication lag is $LAG seconds (threshold:\
+        \ @@option.replication_lag_threshold@@)\"\n    fi\nfi"
+      scriptInterpreter: /bin/bash
+    - description: Check disk usage for MySQL data
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "=== MySQL Disk Usage ==="
+        MYSQL_DATADIR=$(mysql -u "@@option.db_user@@" -p"@@option.db_password@@" -h "@@option.db_host@@" -e "SHOW VARIABLES LIKE 'datadir';" -s -N | cut -f2)
+        df -h "$MYSQL_DATADIR"
+        echo -e "\nTop 10 largest databases:"
+        du -sh "$MYSQL_DATADIR"/* 2>/dev/null | sort -rh | head -10
+      scriptInterpreter: /bin/bash
+    - description: Check for slow queries
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        DB_USER="@@option.db_user@@"
+        DB_PASSWORD="@@option.db_password@@"
+        DB_HOST="@@option.db_host@@"
+
+        echo "=== Slow Query Statistics ==="
+        mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -e "SHOW STATUS LIKE 'Slow_queries';" 2>/dev/null
+
+        echo -e "\n=== Recent Slow Queries (if logging enabled) ==="
+        if [ -f /var/log/mysql/slow.log ]; then
+            tail -20 /var/log/mysql/slow.log | grep -E "Query_time:|# Time:" | tail -10
+        else
+            echo "Slow query log not found or not enabled"
+        fi
+      scriptInterpreter: /bin/bash
+    keepgoing: true
+    strategy: node-first
+  uuid: dc190fcf-6257-4d05-8a43-6a53f9b39399
+

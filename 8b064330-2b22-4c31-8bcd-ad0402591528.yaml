@@ -1,0 +1,110 @@
+- description: Performs table optimization and analysis to improve performance and
+    update statistics
+  executionEnabled: true
+  group: MySQL-DBA
+  id: 8b064330-2b22-4c31-8bcd-ad0402591528
+  loglevel: INFO
+  name: MySQL - Optimize and Analyze Tables
+  nodeFilterEditable: true
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: false
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '1'
+    filter: 'tags: mysql-primary'
+  nodesSelectedByDefault: true
+  options:
+  - description: MySQL host address
+    name: db_host
+    required: true
+    value: localhost
+  - description: MySQL admin password (CHANGE THIS!)
+    name: db_password
+    required: true
+    secure: true
+  - description: MySQL admin user
+    name: db_user
+    required: true
+    value: admin_user
+  - description: Run OPTIMIZE TABLE (can be slow for large tables)
+    name: optimize_tables
+    value: 'false'
+    values:
+    - 'true'
+    - 'false'
+    valuesListDelimiter: ','
+  plugins:
+    ExecutionLifecycle: null
+  schedule:
+    month: '*'
+    time:
+      hour: '03'
+      minute: '30'
+      seconds: '0'
+    weekday:
+      day: SUN
+    year: '*'
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - description: Get list of databases to optimize
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        DB_USER="@@option.db_user@@"
+        DB_PASSWORD="@@option.db_password@@"
+        DB_HOST="@@option.db_host@@"
+
+        echo "=== Getting database list ==="
+        DATABASES=$(mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -e "SHOW DATABASES;" -s -N | grep -vE "^(information_schema|performance_schema|mysql|sys)$")
+        echo "Databases to optimize:"
+        echo "$DATABASES"
+      scriptInterpreter: /bin/bash
+    - description: Analyze and optimize tables
+      interpreterArgsQuoted: false
+      script: "#!/bin/bash\nDB_USER=\"@@option.db_user@@\"\nDB_PASSWORD=\"@@option.db_password@@\"\
+        \nDB_HOST=\"@@option.db_host@@\"\n\nDATABASES=$(mysql -h \"$DB_HOST\" -u \"\
+        $DB_USER\" -p\"$DB_PASSWORD\" -e \"SHOW DATABASES;\" -s -N | grep -vE \"^(information_schema|performance_schema|mysql|sys)$\"\
+        )\n\nfor db in $DATABASES; do\n    echo -e \"\\n=== Processing database: $db\
+        \ ===\"\n    \n    # Get tables in the database\n    TABLES=$(mysql -h \"\
+        $DB_HOST\" -u \"$DB_USER\" -p\"$DB_PASSWORD\" -e \"SHOW TABLES FROM $db;\"\
+        \ -s -N)\n    \n    for table in $TABLES; do\n        echo \"Analyzing $db.$table...\"\
+        \n        mysql -h \"$DB_HOST\" -u \"$DB_USER\" -p\"$DB_PASSWORD\" -e \"ANALYZE\
+        \ TABLE $db.$table;\" 2>/dev/null\n        \n        if [ \"@@option.optimize_tables@@\"\
+        \ == \"true\" ]; then\n            echo \"Optimizing $db.$table...\"\n   \
+        \         mysql -h \"$DB_HOST\" -u \"$DB_USER\" -p\"$DB_PASSWORD\" -e \"OPTIMIZE\
+        \ TABLE $db.$table;\" 2>/dev/null\n        fi\n    done\ndone\n\necho -e \"\
+        \\n=== Optimization complete ===\""
+      scriptInterpreter: /bin/bash
+    - description: Update table statistics
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        DB_USER="@@option.db_user@@"
+        DB_PASSWORD="@@option.db_password@@"
+        DB_HOST="@@option.db_host@@"
+
+        echo "=== Updating table statistics ==="
+        mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -e "SET GLOBAL innodb_stats_on_metadata = ON;" 2>/dev/null
+
+        echo "Table statistics updated successfully"
+      scriptInterpreter: /bin/bash
+    - description: Generate fragmentation report
+      interpreterArgsQuoted: false
+      script: "#!/bin/bash\nDB_USER=\"@@option.db_user@@\"\nDB_PASSWORD=\"@@option.db_password@@\"\
+        \nDB_HOST=\"@@option.db_host@@\"\n\necho \"=== Table Fragmentation Report\
+        \ ===\"\nmysql -h \"$DB_HOST\" -u \"$DB_USER\" -p\"$DB_PASSWORD\" -e \"\n\
+        SELECT \n    table_schema AS 'Database',\n    table_name AS 'Table',\n   \
+        \ ROUND(((data_length + index_length) / 1024 / 1024), 2) AS 'Size (MB)',\n\
+        \    ROUND((data_free / 1024 / 1024), 2) AS 'Free Space (MB)',\n    ROUND((data_free\
+        \ / (data_length + index_length) * 100), 2) AS 'Fragmentation %'\nFROM information_schema.tables\n\
+        WHERE \n    table_schema NOT IN ('information_schema', 'mysql', 'performance_schema',\
+        \ 'sys')\n    AND data_free > 0\nORDER BY data_free DESC\nLIMIT 20;\" 2>/dev/null"
+      scriptInterpreter: /bin/bash
+    keepgoing: true
+    strategy: node-first
+  uuid: 8b064330-2b22-4c31-8bcd-ad0402591528
+
