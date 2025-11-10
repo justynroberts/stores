@@ -1,5 +1,5 @@
 - defaultTab: output
-  description: Check for Online
+  description: Check for Online v2
   executionEnabled: true
   group: Admin
   id: 65239ad8-11c3-4d92-adda-ae89a05be91b
@@ -8,7 +8,7 @@
   name: Check Online
   nodeFilterEditable: false
   plugins:
-    ExecutionLifecycle: null
+    ExecutionLifecycle: {}
   schedule:
     month: '*'
     time:
