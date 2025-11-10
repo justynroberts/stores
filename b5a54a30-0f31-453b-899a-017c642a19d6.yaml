@@ -1,0 +1,75 @@
+- description: Fetch current location data for all vehicles from Microlise API
+  executionEnabled: true
+  group: API/Microlise
+  id: b5a54a30-0f31-453b-899a-017c642a19d6
+  loglevel: INFO
+  name: Microlise - Get Vehicle Locations
+  nodeFilterEditable: true
+  options:
+  - description: Microlise API endpoint URL
+    name: api_endpoint
+    required: true
+    value: https://api.microlise.com/v2
+  - description: Microlise API authentication key
+    name: api_key
+    required: true
+    secure: true
+  - description: Output format for the results
+    name: output_format
+    required: true
+    value: summary
+    values:
+    - summary
+    - detailed
+    - csv
+    valuesListDelimiter: ','
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - description: Fetch vehicle location data from Microlise
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+
+        # Configuration
+        API_ENDPOINT="@@option.api_endpoint@@"
+        API_KEY="@@option.api_key@@"
+        OUTPUT_FORMAT="@@option.output_format@@"
+
+        echo "Fetching vehicle locations from Microlise API..."
+
+        # Make API request
+        response=$(curl -s -X GET \
+          "${API_ENDPOINT}/vehicles/locations" \
+          -H "Authorization: Bearer ${API_KEY}" \
+          -H "Accept: application/json")
+
+        # Check if request was successful
+        if [ $? -ne 0 ]; then
+            echo "ERROR: Failed to connect to Microlise API"
+            exit 1
+        fi
+
+        # Parse and format output based on selected format
+        if [ "$OUTPUT_FORMAT" = "summary" ]; then
+            echo "Vehicle Location Summary:"
+            echo "$response" | jq -r '.vehicles[] | "\(.vehicleId): \(.location.latitude),\(.location.longitude) - \(.status)"'
+        elif [ "$OUTPUT_FORMAT" = "detailed" ]; then
+            echo "Detailed Vehicle Information:"
+            echo "$response" | jq '.'
+        else
+            # CSV format
+            echo "VehicleID,Latitude,Longitude,Speed,Status,LastUpdate"
+            echo "$response" | jq -r '.vehicles[] | [.vehicleId, .location.latitude, .location.longitude, .speed, .status, .lastUpdate] | @csv'
+        fi
+
+        echo "\nTotal vehicles tracked: $(echo "$response" | jq '.vehicles | length')"
+      scriptInterpreter: /bin/bash
+    keepgoing: false
+    strategy: node-first
+  timeout: 5m
+  uuid: b5a54a30-0f31-453b-899a-017c642a19d6
+

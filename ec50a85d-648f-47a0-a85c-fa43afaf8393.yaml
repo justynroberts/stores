@@ -1,0 +1,18 @@
+- defaultTab: nodes
+  description: ''
+  executionEnabled: true
+  id: ec50a85d-648f-47a0-a85c-fa43afaf8393
+  loglevel: INFO
+  name: Store test
+  nodeFilterEditable: false
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - exec: echo "test"
+    keepgoing: false
+    strategy: node-first
+  uuid: ec50a85d-648f-47a0-a85c-fa43afaf8393
+

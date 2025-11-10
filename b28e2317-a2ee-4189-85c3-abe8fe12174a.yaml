@@ -1,0 +1,75 @@
+- description: Synchronize driver information between Carrefour and Microlise systems
+  executionEnabled: true
+  group: API/Microlise
+  id: b28e2317-a2ee-4189-85c3-abe8fe12174a
+  loglevel: INFO
+  name: Microlise - Sync Driver Information
+  nodeFilterEditable: true
+  options:
+  - description: Sync action to perform
+    name: action
+    required: true
+    value: verify
+    values:
+    - export
+    - import
+    - verify
+    valuesListDelimiter: ','
+  - description: Microlise API endpoint URL
+    name: api_endpoint
+    required: true
+    value: https://api.microlise.com/v2
+  - description: Microlise API authentication key
+    name: api_key
+    required: true
+    secure: true
+  - description: Path to driver data file for import/export
+    name: driver_file
+    required: true
+    value: /tmp/carrefour_drivers.json
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - description: Sync driver information with Microlise
+      interpreterArgsQuoted: false
+      script: "#!/bin/bash\n\n# Configuration\nAPI_ENDPOINT=\"@@option.api_endpoint@@\"\
+        \nAPI_KEY=\"@@option.api_key@@\"\nACTION=\"@@option.action@@\"\nDRIVER_FILE=\"\
+        @@option.driver_file@@\"\n\necho \"Starting driver synchronization...\"\n\
+        echo \"Action: $ACTION\"\n\nif [ \"$ACTION\" = \"export\" ]; then\n    # Export\
+        \ drivers from Microlise\n    echo \"Fetching driver data from Microlise...\"\
+        \n    \n    response=$(curl -s -X GET \\\n      \"${API_ENDPOINT}/drivers?includeInactive=false\"\
+        \ \\\n      -H \"Authorization: Bearer ${API_KEY}\" \\\n      -H \"Accept:\
+        \ application/json\")\n    \n    # Format and save data\n    echo \"$response\"\
+        \ | jq '.drivers[] | {\n      driverId: .id,\n      name: .fullName,\n   \
+        \   licenseNumber: .licenseNumber,\n      vehicleAssigned: .currentVehicle,\n\
+        \      status: .status,\n      lastActive: .lastActiveTime\n    }' > \"$DRIVER_FILE\"\
+        \n    \n    driver_count=$(echo \"$response\" | jq '.drivers | length')\n\
+        \    echo \"Exported $driver_count drivers to $DRIVER_FILE\"\n    \nelif [\
+        \ \"$ACTION\" = \"import\" ]; then\n    # Import drivers to Microlise\n  \
+        \  echo \"Importing drivers from $DRIVER_FILE...\"\n    \n    if [ ! -f \"\
+        $DRIVER_FILE\" ]; then\n        echo \"ERROR: Driver file not found: $DRIVER_FILE\"\
+        \n        exit 1\n    fi\n    \n    success_count=0\n    error_count=0\n \
+        \   \n    # Process each driver\n    while IFS= read -r driver; do\n     \
+        \   driver_id=$(echo \"$driver\" | jq -r '.driverId')\n        echo \"Processing\
+        \ driver: $driver_id\"\n        \n        response=$(curl -s -X POST \\\n\
+        \          \"${API_ENDPOINT}/drivers\" \\\n          -H \"Authorization: Bearer\
+        \ ${API_KEY}\" \\\n          -H \"Content-Type: application/json\" \\\n  \
+        \        -d \"$driver\")\n        \n        if [ $? -eq 0 ]; then\n      \
+        \      ((success_count++))\n        else\n            ((error_count++))\n\
+        \            echo \"  ERROR: Failed to import driver $driver_id\"\n      \
+        \  fi\n    done < <(jq -c '.' \"$DRIVER_FILE\")\n    \n    echo \"\\nImport\
+        \ complete:\"\n    echo \"- Successful: $success_count\"\n    echo \"- Failed:\
+        \ $error_count\"\n    \nelse\n    # Verify sync status\n    echo \"Verifying\
+        \ driver synchronization status...\"\n    \n    response=$(curl -s -X GET\
+        \ \\\n      \"${API_ENDPOINT}/sync/drivers/status\" \\\n      -H \"Authorization:\
+        \ Bearer ${API_KEY}\" \\\n      -H \"Accept: application/json\")\n    \n \
+        \   echo \"Sync Status:\"\n    echo \"$response\" | jq '.'\nfi"
+      scriptInterpreter: /bin/bash
+    keepgoing: false
+    strategy: node-first
+  timeout: 15m
+  uuid: b28e2317-a2ee-4189-85c3-abe8fe12174a
+

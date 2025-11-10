@@ -1,0 +1,117 @@
+- defaultTab: nodes
+  description: Vérifie les niveaux de stock et génère les commandes de réapprovisionnement
+    automatiques
+  executionEnabled: true
+  group: Retail
+  id: 2949f6b2-9ac7-4eb8-9dfa-e17a1a69aeaa
+  loglevel: INFO
+  name: Contrôle des Stocks Automatique
+  nodeFilterEditable: true
+  notification:
+    onfailure:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onstart:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onsuccess:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+  notifyAvgDurationThreshold: null
+  options:
+  - description: Pourcentage du seuil pour niveau bas
+    name: seuil_bas
+    type: Integer
+    value: '30'
+  - description: Pourcentage du seuil pour niveau critique
+    name: seuil_critique
+    type: Integer
+    value: '10'
+  plugins:
+    ExecutionLifecycle: null
+  schedule:
+    dayofmonth:
+      day: '*'
+    month: '*'
+    time:
+      hour: '21'
+      minute: '00'
+      seconds: '0'
+    year: '*'
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+
+        echo "========================================"
+        echo "CONTRÔLE AUTOMATIQUE DES STOCKS"
+        echo "========================================"
+        echo "Lancement du contrôle à $(date)"
+        echo ""
+
+        # Connexion à l'inventaire
+        echo "[$(date +%H:%M:%S)] Connexion au système d'inventaire..."
+        sleep 2
+        echo "[$(date +%H:%M:%S)] ✓ Connecté à l'ERP Carrefour"
+        echo ""
+
+        # Analyse des stocks
+        echo "[$(date +%H:%M:%S)] Analyse des niveaux de stock..."
+        echo ""
+
+        # Produits critiques
+        echo "🔴 STOCKS CRITIQUES (< 10% du seuil)"
+        echo "====================================="
+        sleep 2
+        echo "- Lait demi-écrémé 1L: 12 unités (seuil: 200)"
+        echo "- Pain baguette tradition: 8 unités (seuil: 150)"
+        echo "- Eau Evian 1.5L pack x6: 5 unités (seuil: 100)"
+        echo ""
+
+        # Produits bas
+        echo "🟡 STOCKS BAS (< 30% du seuil)"
+        echo "=============================="
+        sleep 2
+        echo "- Yaourt nature x4: 45 unités (seuil: 200)"
+        echo "- Pommes Golden kg: 38 unités (seuil: 150)"
+        echo "- Pâtes Barilla 500g: 62 unités (seuil: 250)"
+        echo "- Sucre blanc 1kg: 28 unités (seuil: 100)"
+        echo ""
+
+        # Génération des commandes
+        echo "[$(date +%H:%M:%S)] Génération des commandes automatiques..."
+        sleep 3
+        echo ""
+        echo "📦 COMMANDES GÉNÉRÉES"
+        echo "====================="
+        echo "Commande #CF$(date +%Y%m%d)-001 - Produits laitiers"
+        echo "Commande #CF$(date +%Y%m%d)-002 - Boulangerie"
+        echo "Commande #CF$(date +%Y%m%d)-003 - Boissons"
+        echo "Commande #CF$(date +%Y%m%d)-004 - Épicerie"
+        echo ""
+
+        # Optimisation des rayons
+        echo "[$(date +%H:%M:%S)] Analyse de l'optimisation des rayons..."
+        sleep 2
+        echo "[$(date +%H:%M:%S)] 💡 Recommandation: Réorganiser rayon fruits/légumes"
+        echo "[$(date +%H:%M:%S)] 💡 Recommandation: Augmenter stock produits bio"
+        echo ""
+
+        # Envoi aux fournisseurs
+        echo "[$(date +%H:%M:%S)] Transmission des commandes..."
+        sleep 2
+        echo "[$(date +%H:%M:%S)] ✓ 4 commandes envoyées aux fournisseurs"
+        echo "[$(date +%H:%M:%S)] ✓ Confirmation de livraison: Demain 6h00"
+        echo ""
+        echo "✅ Contrôle des stocks terminé - $(date +%H:%M:%S)"
+      scriptInterpreter: bash
+    keepgoing: false
+    strategy: node-first
+  uuid: 2949f6b2-9ac7-4eb8-9dfa-e17a1a69aeaa
+

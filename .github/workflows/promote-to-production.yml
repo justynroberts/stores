@@ -7,7 +7,7 @@ on:
       - preproduction
 
 jobs:
-  deploy-to-production:
+  create-pr:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -61,6 +61,7 @@ jobs:
           # Get changes summary
           CHANGES=$(git log origin/production..preproduction --oneline --max-count=10)
           FILES_CHANGED=$(git diff --stat origin/production...preproduction | tail -n1)
+          JOBS_CHANGED=$(git diff --name-only origin/production...preproduction | grep -E '\.yaml$|\.yml$|\.xml$' || echo "No Rundeck jobs changed")
           
           # Create PR
           PR_URL=$(gh pr create \
@@ -68,11 +69,14 @@ jobs:
             --head preproduction \
             --title "🚀 Deploy to Production: $(date +'%Y-%m-%d %H:%M')" \
             --body "$(cat <<EOF
-          ## Automated Production Deployment
+          ## Production Deployment Request
           
           **Build Number**: ${{ github.run_number }}
           **Triggered by**: ${{ github.actor }}
           **Commit**: ${{ github.sha }}
+          
+          ### ⚠️ Manual Review Required
+          This PR requires manual approval before merging to production.
           
           ### Summary of Changes
           $FILES_CHANGED
@@ -83,24 +87,34 @@ jobs:
           \`\`\`
           
           ### Rundeck Jobs Modified
-          $(git diff --name-only origin/production...preproduction | grep -E '\.yaml$|\.yml$|\.xml$' | sed 's/^/- /')
+          \`\`\`
+          $JOBS_CHANGED
+          \`\`\`
+          
+          ### Pre-Merge Checklist
+          - [ ] Changes reviewed and tested in preproduction
+          - [ ] No breaking changes identified
+          - [ ] Rollback plan understood
+          - [ ] Team notified of upcoming deployment
           
           ### Rollback Instructions
-          If needed, rollback to: \`${{ steps.rollback.outputs.sha }}\`
+          If issues occur after merge, rollback to: \`${{ steps.rollback.outputs.sha }}\`
           
           \`\`\`bash
+          # Quick rollback command:
           git checkout production
           git reset --hard ${{ steps.rollback.outputs.sha }}
           git push --force-with-lease origin production
           \`\`\`
           
-          ### Pre-Deployment Checklist
-          - [x] Changes tested in preproduction
-          - [x] Automated deployment initiated
-          - [ ] Deployment verified
+          ### How to Deploy
+          1. Review the changes above
+          2. Ensure all checks pass
+          3. Click "Merge pull request" when ready
+          4. Monitor the deployment
           
           ---
-          *This PR will be automatically merged after validation passes.*
+          ⏰ **This PR will remain open until manually merged.**
           EOF
           )")
           
@@ -108,6 +122,29 @@ jobs:
           PR_NUMBER=$(echo "$PR_URL" | grep -oP '\d+$')
           echo "number=$PR_NUMBER" >> $GITHUB_OUTPUT
           echo "Created PR #$PR_NUMBER"
+          echo "::notice title=PR Created::Pull Request #$PR_NUMBER created and awaiting review"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Update Existing PR
+        if: steps.check-pr.outputs.found == 'true'
+        run: |
+          # Add a comment to existing PR about new commits
+          LATEST_COMMIT=$(git rev-parse --short HEAD)
+          LATEST_MESSAGE=$(git log -1 --pretty=%B)
+          
+          gh pr comment ${{ steps.check-pr.outputs.number }} --body "$(cat <<EOF
+          ## 📝 Preproduction Updated
+          
+          **New commits pushed to preproduction**
+          - Latest: \`$LATEST_COMMIT\`
+          - Message: $LATEST_MESSAGE
+          - Time: $(date +'%Y-%m-%d %H:%M:%S UTC')
+          
+          Please review the additional changes before merging.
+          EOF
+          )"
+          echo "::notice title=PR Updated::Pull Request #${{ steps.check-pr.outputs.number }} updated with new commits"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
@@ -126,28 +163,37 @@ jobs:
           echo "Validating Rundeck job files..."
           
           VALIDATION_PASSED=true
+          VALIDATION_REPORT=""
           
           # Check YAML files
           for file in $(git diff --name-only origin/production...preproduction | grep -E '\.ya?ml$'); do
             if [ -f "$file" ]; then
               echo "Checking $file..."
-              python3 -c "import yaml; yaml.safe_load(open('$file'))" 2>/dev/null || {
-                echo "❌ Invalid YAML in $file"
+              if python3 -c "import yaml; yaml.safe_load(open('$file'))" 2>/dev/null; then
+                VALIDATION_REPORT="${VALIDATION_REPORT}✅ $file - Valid YAML\n"
+              else
+                VALIDATION_REPORT="${VALIDATION_REPORT}❌ $file - Invalid YAML\n"
                 VALIDATION_PASSED=false
-              }
+              fi
             fi
           done
           
-          # Check XML files
+          # Check XML files  
           for file in $(git diff --name-only origin/production...preproduction | grep '\.xml$'); do
             if [ -f "$file" ]; then
               echo "Checking $file..."
-              python3 -c "import xml.etree.ElementTree as ET; ET.parse('$file')" 2>/dev/null || {
-                echo "❌ Invalid XML in $file"
+              if python3 -c "import xml.etree.ElementTree as ET; ET.parse('$file')" 2>/dev/null; then
+                VALIDATION_REPORT="${VALIDATION_REPORT}✅ $file - Valid XML\n"
+              else
+                VALIDATION_REPORT="${VALIDATION_REPORT}❌ $file - Invalid XML\n"
                 VALIDATION_PASSED=false
-              }
+              fi
             fi
           done
+          
+          echo "report<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$VALIDATION_REPORT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
           
           if [ "$VALIDATION_PASSED" == "true" ]; then
             echo "✅ All validations passed"
@@ -161,58 +207,48 @@ jobs:
       - name: Comment Validation Results
         if: always()
         run: |
-          gh pr comment ${{ steps.pr-number.outputs.number }} --body "$(cat <<EOF
-          ## Validation Results
-          
-          **Status**: ${{ steps.validate.outcome == 'success' && '✅ Passed' || '❌ Failed' }}
-          **Run**: [View Details](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-          **Time**: $(date +'%Y-%m-%d %H:%M:%S UTC')
-          
-          $(if [ "${{ steps.validate.outcome }}" == "success" ]; then
-            echo "All Rundeck job files validated successfully. Proceeding with auto-merge..."
+          if [ "${{ steps.validate.outcome }}" == "success" ]; then
+            STATUS_EMOJI="✅"
+            STATUS_TEXT="All Checks Passed"
+            READY_MESSAGE="This PR is ready for manual review and merge."
+            LABEL="ready-for-review"
           else
-            echo "Validation failed. Please fix the issues and push again."
-          fi)
+            STATUS_EMOJI="❌"
+            STATUS_TEXT="Validation Failed"
+            READY_MESSAGE="Please fix the validation errors before merging."
+            LABEL="needs-fix"
+          fi
+          
+          gh pr comment ${{ steps.pr-number.outputs.number }} --body "$(cat <<EOF
+          ## $STATUS_EMOJI Validation Results: $STATUS_TEXT
+          
+          **Workflow Run**: [View Details](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          **Validated at**: $(date +'%Y-%m-%d %H:%M:%S UTC')
+          
+          ### File Validation Report
+          ${{ steps.validate.outputs.report }}
+          
+          ### Next Steps
+          $READY_MESSAGE
+          
           EOF
           )"
+          
+          # Add label to PR
+          gh pr edit ${{ steps.pr-number.outputs.number }} --add-label "$LABEL"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Auto-merge Pull Request
-        if: steps.validate.outcome == 'success'
+      - name: Summary
         run: |
-          echo "Enabling auto-merge for PR #${{ steps.pr-number.outputs.number }}..."
-          
-          # Enable auto-merge (will merge when all checks pass)
-          gh pr merge ${{ steps.pr-number.outputs.number }} \
-            --auto \
-            --merge \
-            --delete-branch=false \
-            --subject "Auto-merge: Production deployment $(date +'%Y-%m-%d %H:%M')"
-          
-          echo "Auto-merge enabled. PR will merge when all checks pass."
-          
-          # Wait a bit to see if it merges immediately
-          sleep 10
-          
-          # Check merge status
-          PR_STATE=$(gh pr view ${{ steps.pr-number.outputs.number }} --json state --jq '.state')
-          if [ "$PR_STATE" == "MERGED" ]; then
-            echo "✅ PR successfully merged to production!"
-          else
-            echo "⏳ PR is pending merge (waiting for additional checks or approvals)"
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.check-pr.outputs.found }}" == "true" ]; then
+            echo "✅ Updated existing PR #${{ steps.pr-number.outputs.number }}" >> $GITHUB_STEP_SUMMARY
+          else  
+            echo "✅ Created new PR #${{ steps.pr-number.outputs.number }}" >> $GITHUB_STEP_SUMMARY
           fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Post Deployment Notification
-        if: steps.validate.outcome == 'success'
-        run: |
-          echo "🚀 Deployment to production initiated!"
-          echo "PR: #${{ steps.pr-number.outputs.number }}"
-          echo "Rollback SHA: ${{ steps.rollback.outputs.sha }}"
-          
-          # Add your notification logic here
-          # curl -X POST ${{ secrets.SLACK_WEBHOOK }} \
-          #   -H 'Content-Type: application/json' \
-          #   -d "{\"text\":\"Production deployment initiated via PR #${{ steps.pr-number.outputs.number }}\"}"
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status**: Awaiting manual review and approval" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[View Pull Request](https://github.com/${{ github.repository }}/pull/${{ steps.pr-number.outputs.number }})" >> $GITHUB_STEP_SUMMARY

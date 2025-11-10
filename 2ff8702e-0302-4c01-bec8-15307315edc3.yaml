@@ -1,0 +1,135 @@
+- defaultTab: nodes
+  description: Analyse les données clients du jour avec l'IA pour identifier les tendances
+    et optimiser les promotions
+  executionEnabled: true
+  group: Retail
+  id: 2ff8702e-0302-4c01-bec8-15307315edc3
+  loglevel: INFO
+  name: Analyse Comportement Client IA
+  nodeFilterEditable: true
+  notification:
+    onavgduration:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onfailure:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onstart:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onsuccess:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+  notifyAvgDurationThreshold: null
+  options:
+  - description: Type d'analyse IA à effectuer
+    name: analyse_type
+    type: Select
+    value: standard
+    values:
+    - standard
+    - approfondie
+    - predictive
+    valuesListDelimiter: ','
+  plugins:
+    ExecutionLifecycle: null
+  schedule:
+    dayofmonth:
+      day: '*'
+    month: '*'
+    time:
+      hour: '23'
+      minute: '00'
+      seconds: '0'
+    year: '*'
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+
+        echo "========================================"
+        echo "🤖 ANALYSE IA - COMPORTEMENT CLIENT"
+        echo "========================================"
+        echo "Initialisation de l'analyse à $(date)"
+        echo ""
+
+        # Collecte des données
+        echo "[$(date +%H:%M:%S)] Collecte des données du jour..."
+        sleep 2
+        echo "[$(date +%H:%M:%S)] ✓ 3,229 tickets de caisse analysés"
+        echo "[$(date +%H:%M:%S)] ✓ 1,847 cartes de fidélité scannées"
+        echo "[$(date +%H:%M:%S)] ✓ 724 nouveaux clients enregistrés"
+        echo ""
+
+        # Analyse des parcours
+        echo "[$(date +%H:%M:%S)] Analyse des parcours clients..."
+        echo "🛒 PARCOURS TYPES IDENTIFIÉS"
+        echo "============================="
+        sleep 3
+        echo "1. 'Course Rapide' (42% des clients)"
+        echo "   ⏱️ Temps moyen: 12 minutes"
+        echo "   🛍️ Panier moyen: €18.50"
+        echo "   📍 Zones: Snacks, Boissons, Plats préparés"
+        echo ""
+        echo "2. 'Course Famille' (31% des clients)"
+        echo "   ⏱️ Temps moyen: 47 minutes"
+        echo "   🛍️ Panier moyen: €127.30"
+        echo "   📍 Zones: Tous rayons, focus produits frais"
+        echo ""
+        echo "3. 'Course Bio/Healthy' (27% des clients)"
+        echo "   ⏱️ Temps moyen: 35 minutes"
+        echo "   🛍️ Panier moyen: €76.80"
+        echo "   📍 Zones: Bio, Sans gluten, Végétarien"
+        echo ""
+
+        # Prédictions IA
+        echo "[$(date +%H:%M:%S)] Génération des prédictions IA..."
+        sleep 3
+        echo "🔮 PRÉDICTIONS POUR DEMAIN"
+        echo "==========================="
+        echo "📈 Affluence prévue: +18% (météo ensoleillée)"
+        echo "🥖 Pic boulangerie: 11h30-12h30"
+        echo "🍓 Forte demande: Fruits de saison (+35%)"
+        echo "🍺 Promotion suggérée: Pack bières (match PSG)"
+        echo ""
+
+        # Recommandations
+        echo "[$(date +%H:%M:%S)] Calcul des recommandations..."
+        sleep 2
+        echo "💡 ACTIONS RECOMMANDÉES"
+        echo "======================="
+        echo "1. Renforcer personnel caisse 11h-14h"
+        echo "2. Réapprovisionner rayon fruits dès 7h"
+        echo "3. Mettre en avant promotions bières"
+        echo "4. Préparer 20% sandwichs en plus"
+        echo "5. Activer caisse rapide dès 10h30"
+        echo ""
+
+        # Anomalies détectées
+        echo "⚠️ ANOMALIES DÉTECTÉES"
+        echo "======================"
+        echo "- Rupture récurrente: Eau gazeuse 1L"
+        echo "- File d'attente excessive: Rayon fromage 18h"
+        echo "- Taux abandon panier: 8.2% (seuil: 5%)"
+        echo ""
+
+        # Export des données
+        echo "[$(date +%H:%M:%S)] Export des analyses..."
+        sleep 2
+        echo "[$(date +%H:%M:%S)] ✓ Dashboard BI mis à jour"
+        echo "[$(date +%H:%M:%S)] ✓ Rapport PDF généré: analyse_client_$(date +%Y%m%d).pdf"
+        echo "[$(date +%H:%M:%S)] ✓ Données synchronisées avec CRM"
+        echo ""
+        echo "✅ Analyse IA terminée - Insights disponibles sur le portail"
+      scriptInterpreter: bash
+    keepgoing: false
+    strategy: node-first
+  uuid: 2ff8702e-0302-4c01-bec8-15307315edc3
+

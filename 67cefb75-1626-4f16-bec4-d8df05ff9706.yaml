@@ -1,0 +1,77 @@
+- description: Daily backup of user data and home directories
+  executionEnabled: true
+  group: Backups
+  id: 67cefb75-1626-4f16-bec4-d8df05ff9706
+  loglevel: INFO
+  name: User Data Backup - Daily
+  nodeFilterEditable: false
+  options:
+  - description: Department to backup
+    name: department
+    required: true
+    value: all
+    values:
+    - all
+    - sales
+    - marketing
+    - it
+    - finance
+    - hr
+    valuesListDelimiter: ','
+  - description: Encrypt backup files
+    name: encrypt_backup
+    required: true
+    value: 'true'
+    values:
+    - 'true'
+    - 'false'
+    valuesListDelimiter: ','
+  plugins:
+    ExecutionLifecycle: null
+  schedule:
+    dayofmonth:
+      day: '*'
+    month: '*'
+    time:
+      hour: '04'
+      minute: '00'
+      seconds: '0'
+    year: '*'
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - description: Identify user directories
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "Identifying user directories for department: @@option.department@@"
+        # Simulate directory scan
+        sleep 2
+        echo "Found 147 user directories to backup"
+      scriptInterpreter: /bin/bash
+    - description: Backup user data
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "Starting user data backup..."
+        echo "Department: @@option.department@@"
+        echo "Encryption: @@option.encrypt_backup@@"
+        # Simulate backup
+        sleep 8
+        echo "User data backup completed"
+      scriptInterpreter: /bin/bash
+    - description: Send backup report
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "Generating backup report..."
+        echo "Total size: 2.3TB"
+        echo "Files backed up: 1,245,678"
+        echo "Sending report to administrators..."
+        echo "Report sent successfully"
+      scriptInterpreter: /bin/bash
+    keepgoing: false
+    strategy: node-first
+  uuid: 67cefb75-1626-4f16-bec4-d8df05ff9706
+

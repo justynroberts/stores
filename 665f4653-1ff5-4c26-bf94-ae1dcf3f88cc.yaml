@@ -1,0 +1,107 @@
+- defaultTab: nodes
+  description: Effectue la clôture de caisse pour tous les magasins et synchronise
+    avec le système central
+  executionEnabled: true
+  group: Retail
+  id: 665f4653-1ff5-4c26-bf94-ae1dcf3f88cc
+  loglevel: INFO
+  name: Clôture de Caisse Centralisée
+  nodeFilterEditable: true
+  notification:
+    onfailure:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onstart:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onsuccess:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+  notifyAvgDurationThreshold: null
+  plugins:
+    ExecutionLifecycle: null
+  schedule:
+    dayofmonth:
+      day: '*'
+    month: '*'
+    time:
+      hour: '23'
+      minute: '30'
+      seconds: '0'
+    year: '*'
+  scheduleEnabled: false
+  schedules: []
+  sequence:
+    commands:
+    - interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+
+        echo "========================================"
+        echo "CLÔTURE DE CAISSE CENTRALISÉE"
+        echo "========================================"
+        echo "Début de la clôture à $(date)"
+        echo ""
+
+        # Vérification des systèmes
+        echo "[$(date +%H:%M:%S)] Vérification de l'état des caisses..."
+        sleep 2
+        echo "[$(date +%H:%M:%S)] 🟢 Magasin 0: 5 caisses actives"
+        sleep 1
+        echo "[$(date +%H:%M:%S)] 🟢 Magasin 1: 4 caisses actives"
+        echo ""
+
+        # Début de la clôture
+        echo "[$(date +%H:%M:%S)] Démarrage de la séquence de clôture..."
+        echo ""
+
+        # Magasin 0
+        echo "📍 MAGASIN 0"
+        echo "-------------"
+        for i in {1..5}; do
+            echo "[$(date +%H:%M:%S)] Clôture caisse $i..."
+            sleep 1
+            MONTANT=$((800 + RANDOM % 500))
+            echo "[$(date +%H:%M:%S)] ✓ Caisse $i clôturée - Montant: €$MONTANT"
+        done
+        echo ""
+
+        # Magasin 1
+        echo "📍 MAGASIN 1"
+        echo "-------------"
+        for i in {1..4}; do
+            echo "[$(date +%H:%M:%S)] Clôture caisse $i..."
+            sleep 1
+            MONTANT=$((700 + RANDOM % 400))
+            echo "[$(date +%H:%M:%S)] ✓ Caisse $i clôturée - Montant: €$MONTANT"
+        done
+        echo ""
+
+        # Synchronisation
+        echo "[$(date +%H:%M:%S)] Synchronisation avec le système central..."
+        sleep 3
+        echo "[$(date +%H:%M:%S)] ✓ Données synchronisées avec SAP"
+        echo ""
+
+        # Sauvegarde
+        echo "[$(date +%H:%M:%S)] Sauvegarde des données de clôture..."
+        sleep 2
+        echo "[$(date +%H:%M:%S)] ✓ Sauvegarde complète: backup_$(date +%Y%m%d_%H%M%S).tar.gz"
+        echo ""
+
+        # Rapport final
+        echo "📋 RÉSUMÉ DE CLÔTURE"
+        echo "==================="
+        echo "Total caisses clôturées: 9"
+        echo "Statut: ✅ Succès"
+        echo "Heure de fin: $(date +%H:%M:%S)"
+        echo ""
+        echo "✅ Clôture de caisse centralisée terminée avec succès!"
+      scriptInterpreter: bash
+    keepgoing: false
+    strategy: node-first
+  uuid: 665f4653-1ff5-4c26-bf94-ae1dcf3f88cc
+

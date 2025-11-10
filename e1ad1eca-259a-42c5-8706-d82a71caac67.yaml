@@ -1,0 +1,77 @@
+- description: Performs daily backup of all production databases
+  executionEnabled: true
+  group: Backups
+  id: e1ad1eca-259a-42c5-8706-d82a71caac67
+  loglevel: INFO
+  name: Database Backup - Daily
+  nodeFilterEditable: false
+  options:
+  - description: Type of backup to perform
+    name: backup_type
+    required: true
+    value: full
+    values:
+    - full
+    - incremental
+    - differential
+    valuesListDelimiter: ','
+  - description: Number of days to retain backup
+    name: retention_days
+    required: true
+    value: '30'
+  plugins:
+    ExecutionLifecycle: null
+  schedule:
+    dayofmonth:
+      day: '*'
+    month: '*'
+    time:
+      hour: '02'
+      minute: '00'
+      seconds: '0'
+    year: '*'
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - description: Create backup directory
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        BACKUP_DIR="/backup/db/$(date +%Y%m%d_%H%M%S)"
+        mkdir -p "$BACKUP_DIR"
+        echo "Created backup directory: $BACKUP_DIR"
+      scriptInterpreter: /bin/bash
+    - description: Perform database backup
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "Starting @@option.backup_type@@ backup..."
+        # Simulate database backup
+        sleep 5
+        echo "Database backup completed successfully"
+        echo "Backup type: @@option.backup_type@@"
+        echo "Retention: @@option.retention_days@@ days"
+      scriptInterpreter: /bin/bash
+    - description: Compress backup files
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "Compressing backup files..."
+        # Simulate compression
+        sleep 3
+        echo "Compression completed"
+      scriptInterpreter: /bin/bash
+    - description: Upload to remote storage
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "Uploading to remote storage..."
+        # Simulate upload
+        sleep 4
+        echo "Upload completed successfully"
+      scriptInterpreter: /bin/bash
+    keepgoing: false
+    strategy: node-first
+  uuid: e1ad1eca-259a-42c5-8706-d82a71caac67
+

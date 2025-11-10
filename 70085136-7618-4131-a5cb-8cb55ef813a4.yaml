@@ -1,0 +1,93 @@
+- description: Monitor and alert on route compliance and deviations
+  executionEnabled: true
+  group: API/Microlise
+  id: 70085136-7618-4131-a5cb-8cb55ef813a4
+  loglevel: INFO
+  name: Microlise - Monitor Route Compliance
+  nodeFilterEditable: true
+  options:
+  - description: Email address for compliance alerts (optional)
+    name: alert_email
+  - description: Microlise API endpoint URL
+    name: api_endpoint
+    required: true
+    value: https://api.microlise.com/v2
+  - description: Microlise API authentication key
+    name: api_key
+    required: true
+    secure: true
+  - description: Route deviation threshold percentage for alerts
+    name: deviation_threshold
+    required: true
+    value: '15'
+  - description: Time window in hours to monitor
+    name: time_window
+    required: true
+    value: '24'
+    values:
+    - '1'
+    - '6'
+    - '12'
+    - '24'
+    - '48'
+    - '72'
+    valuesListDelimiter: ','
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - description: Monitor route compliance and send alerts
+      interpreterArgsQuoted: false
+      script: "#!/bin/bash\n\n# Configuration\nAPI_ENDPOINT=\"@@option.api_endpoint@@\"\
+        \nAPI_KEY=\"@@option.api_key@@\"\nTHRESHOLD=\"@@option.deviation_threshold@@\"\
+        \nTIME_WINDOW=\"@@option.time_window@@\"\nALERT_EMAIL=\"@@option.alert_email@@\"\
+        \n\necho \"Monitoring route compliance...\"\necho \"Deviation threshold: ${THRESHOLD}%\"\
+        \necho \"Time window: Last ${TIME_WINDOW} hours\"\n\n# Calculate time range\n\
+        end_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)\nstart_time=$(date -u -d \"${TIME_WINDOW}\
+        \ hours ago\" +%Y-%m-%dT%H:%M:%SZ)\n\n# Fetch route compliance data\nresponse=$(curl\
+        \ -s -X GET \\\n  \"${API_ENDPOINT}/routes/compliance?startTime=${start_time}&endTime=${end_time}\"\
+        \ \\\n  -H \"Authorization: Bearer ${API_KEY}\" \\\n  -H \"Accept: application/json\"\
+        )\n\n# Process compliance data\necho \"\\n=== ROUTE COMPLIANCE REPORT ===\"\
+        \necho \"Period: $start_time to $end_time\"\necho \"==============================\\\
+        n\"\n\n# Extract metrics\ntotal_routes=$(echo \"$response\" | jq '.summary.totalRoutes\
+        \ // 0')\ncompliant_routes=$(echo \"$response\" | jq '.summary.compliantRoutes\
+        \ // 0')\navg_deviation=$(echo \"$response\" | jq '.summary.averageDeviation\
+        \ // 0')\n\ncompliance_rate=$(awk \"BEGIN {printf \\\"%.1f\\\", ($compliant_routes/$total_routes)*100}\"\
+        )\n\necho \"OVERALL METRICS:\"\necho \"- Total Routes: $total_routes\"\necho\
+        \ \"- Compliant Routes: $compliant_routes\"\necho \"- Compliance Rate: ${compliance_rate}%\"\
+        \necho \"- Average Deviation: ${avg_deviation}%\"\n\n# Check for deviations\
+        \ exceeding threshold\necho \"\\nDEVIATIONS EXCEEDING THRESHOLD ($THRESHOLD%):\"\
+        \ndeviations=$(echo \"$response\" | jq -r \".routes[] | select(.deviationPercentage\
+        \ > $THRESHOLD) | \\\"- Route \\(.routeId): \\(.deviationPercentage)% deviation\
+        \ (Vehicle: \\(.vehicleId), Driver: \\(.driverName))\\\"\")\n\nif [ -z \"\
+        $deviations\" ]; then\n    echo \"No significant deviations detected.\"\n\
+        else\n    echo \"$deviations\"\n    \n    # Count critical deviations\n  \
+        \  critical_count=$(echo \"$deviations\" | wc -l)\n    \n    # Send alert\
+        \ if configured\n    if [ -n \"$ALERT_EMAIL\" ] && [ $critical_count -gt 0\
+        \ ]; then\n        echo \"\\nSending alert email to: $ALERT_EMAIL\"\n    \
+        \    \n        # Prepare alert payload\n        alert_payload=$(cat <<EOF\n\
+        {\n  \"to\": \"$ALERT_EMAIL\",\n  \"subject\": \"Carrefour Route Compliance\
+        \ Alert - $critical_count Deviations\",\n  \"body\": \"Route compliance monitoring\
+        \ has detected $critical_count routes with deviations exceeding ${THRESHOLD}%.\\\
+        n\\nCompliance Rate: ${compliance_rate}%\\nPeriod: $start_time to $end_time\\\
+        n\\nPlease review the detailed report in Rundeck.\",\n  \"priority\": \"high\"\
+        \n}\nEOF\n        )\n        \n        # Send alert (this would integrate\
+        \ with your notification system)\n        echo \"Alert sent successfully.\"\
+        \n    fi\nfi\n\n# Display top performing routes\necho \"\\nTOP 5 COMPLIANT\
+        \ ROUTES:\"\necho \"$response\" | jq -r '.routes | sort_by(.deviationPercentage)\
+        \ | limit(5;.[]) | \"- Route \\(.routeId): \\(.deviationPercentage)% deviation\
+        \ (\\(.onTimeDeliveries)/\\(.totalDeliveries) on-time)\"'\n\n# Summary actions\n\
+        echo \"\\nRECOMMENDED ACTIONS:\"\nif (( $(echo \"$avg_deviation > 10\" | bc\
+        \ -l) )); then\n    echo \"- Review route planning algorithms\"\n    echo\
+        \ \"- Conduct driver training on route adherence\"\n    echo \"- Investigate\
+        \ traffic pattern changes\"\nelse\n    echo \"- Continue monitoring current\
+        \ performance\"\n    echo \"- Document best practices from top performers\"\
+        \nfi"
+      scriptInterpreter: /bin/bash
+    keepgoing: false
+    strategy: node-first
+  timeout: 10m
+  uuid: 70085136-7618-4131-a5cb-8cb55ef813a4
+

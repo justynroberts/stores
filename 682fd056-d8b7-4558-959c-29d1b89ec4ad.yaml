@@ -1,0 +1,47 @@
+- description: Hourly backup of critical system configurations
+  executionEnabled: true
+  group: Backups
+  id: 682fd056-d8b7-4558-959c-29d1b89ec4ad
+  loglevel: INFO
+  name: Configuration Backup - Hourly
+  nodeFilterEditable: false
+  plugins:
+    ExecutionLifecycle: null
+  schedule:
+    dayofmonth:
+      day: '*'
+    month: '*'
+    time:
+      hour: '*'
+      minute: '30'
+      seconds: '0'
+    year: '*'
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - description: Backup system configurations
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "Starting configuration backup..."
+        CONFIG_DIR="/backup/configs/$(date +%Y%m%d_%H%M%S)"
+        mkdir -p "$CONFIG_DIR"
+        echo "Backing up /etc configurations..."
+        echo "Backing up application configs..."
+        sleep 2
+        echo "Configuration backup completed"
+      scriptInterpreter: /bin/bash
+    - description: Verify backup integrity
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "Verifying backup integrity..."
+        # Simulate verification
+        sleep 1
+        echo "Backup verification passed"
+      scriptInterpreter: /bin/bash
+    keepgoing: false
+    strategy: node-first
+  uuid: 682fd056-d8b7-4558-959c-29d1b89ec4ad
+

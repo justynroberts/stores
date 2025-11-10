@@ -1,0 +1,37 @@
+- defaultTab: nodes
+  description: ''
+  executionEnabled: true
+  id: 19ffd740-c9fa-4ed0-9b7f-36d372e51244
+  loglevel: INFO
+  name: Store Job (Success)
+  nodeFilterEditable: false
+  notification:
+    onfailure:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onsuccess:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+  notifyAvgDurationThreshold: null
+  plugins:
+    ExecutionLifecycle: null
+  schedule:
+    month: '*'
+    time:
+      hour: '*'
+      minute: 0/6
+      seconds: '0'
+    weekday:
+      day: '*'
+    year: '*'
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - exec: echo "success"
+    keepgoing: false
+    strategy: node-first
+  uuid: 19ffd740-c9fa-4ed0-9b7f-36d372e51244
+
