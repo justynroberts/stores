@@ -1,0 +1,142 @@
+- description: 'Performs security audit checks including user privileges, password
+    policies, and configuration review'
+  executionEnabled: true
+  group: MySQL-DBA
+  id: 87869365-f677-4009-9a4c-648ca473712c
+  loglevel: INFO
+  name: MySQL - Security Audit
+  nodeFilterEditable: true
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: true
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '1'
+    filter: 'tags: mysql-server'
+  nodesSelectedByDefault: true
+  options:
+  - description: MySQL host address
+    name: db_host
+    required: true
+    value: localhost
+  - description: MySQL admin password
+    name: db_password
+    required: true
+    secure: true
+  - description: MySQL admin user with privilege to read mysql.user
+    name: db_user
+    required: true
+    value: security_auditor
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - description: Check for users with blank passwords
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        DB_USER="@@option.db_user@@"
+        DB_PASSWORD="@@option.db_password@@"
+        DB_HOST="@@option.db_host@@"
+
+        echo "=== Checking for users with blank passwords ==="
+        BLANK_USERS=$(mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -e "SELECT User, Host FROM mysql.user WHERE authentication_string = '' OR authentication_string IS NULL;" -s -N 2>/dev/null)
+
+        if [ -z "$BLANK_USERS" ]; then
+            echo "✓ No users found with blank passwords"
+        else
+            echo "⚠ WARNING: Users with blank passwords found:"
+            echo "$BLANK_USERS"
+        fi
+      scriptInterpreter: /bin/bash
+    - description: Check for users with excessive privileges
+      interpreterArgsQuoted: false
+      script: "#!/bin/bash\nDB_USER=\"@@option.db_user@@\"\nDB_PASSWORD=\"@@option.db_password@@\"\
+        \nDB_HOST=\"@@option.db_host@@\"\n\necho \"=== Checking for users with SUPER\
+        \ or ALL privileges ===\"\nmysql -h \"$DB_HOST\" -u \"$DB_USER\" -p\"$DB_PASSWORD\"\
+        \ -e \"\nSELECT \n    User, \n    Host, \n    Super_priv,\n    CASE \n   \
+        \     WHEN Super_priv = 'Y' THEN 'HAS SUPER PRIVILEGE'\n        ELSE 'OK'\n\
+        \    END AS Status\nFROM mysql.user \nWHERE User NOT IN ('root', 'mysql.sys',\
+        \ 'mysql.session')\nORDER BY Super_priv DESC;\" 2>/dev/null"
+      scriptInterpreter: /bin/bash
+    - description: Check for remote root access
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        DB_USER="@@option.db_user@@"
+        DB_PASSWORD="@@option.db_password@@"
+        DB_HOST="@@option.db_host@@"
+
+        echo "=== Checking for remote root access ==="
+        REMOTE_ROOT=$(mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -e "SELECT User, Host FROM mysql.user WHERE User = 'root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');" -s -N 2>/dev/null)
+
+        if [ -z "$REMOTE_ROOT" ]; then
+            echo "✓ Root access is properly restricted to localhost only"
+        else
+            echo "⚠ WARNING: Root has remote access from:"
+            echo "$REMOTE_ROOT"
+        fi
+      scriptInterpreter: /bin/bash
+    - description: Review security-related variables
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        DB_USER="@@option.db_user@@"
+        DB_PASSWORD="@@option.db_password@@"
+        DB_HOST="@@option.db_host@@"
+
+        echo "=== Security Configuration Review ==="
+        mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -e "
+        SHOW VARIABLES WHERE Variable_name IN (
+            'validate_password_policy',
+            'validate_password_length',
+            'local_infile',
+            'secure_file_priv',
+            'skip_name_resolve',
+            'sql_mode',
+            'max_connect_errors',
+            'max_connections'
+        );" 2>/dev/null
+
+        echo -e "\n=== SSL/TLS Configuration ==="
+        mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -e "SHOW VARIABLES LIKE '%ssl%';" 2>/dev/null
+      scriptInterpreter: /bin/bash
+    - description: Check for anonymous users
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        DB_USER="@@option.db_user@@"
+        DB_PASSWORD="@@option.db_password@@"
+        DB_HOST="@@option.db_host@@"
+
+        echo "=== Checking for anonymous users ==="
+        ANON_USERS=$(mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -e "SELECT User, Host FROM mysql.user WHERE User = '';" -s -N 2>/dev/null)
+
+        if [ -z "$ANON_USERS" ]; then
+            echo "✓ No anonymous users found"
+        else
+            echo "⚠ WARNING: Anonymous users found:"
+            echo "$ANON_USERS"
+        fi
+      scriptInterpreter: /bin/bash
+    - description: Generate security audit summary
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "=== MySQL Security Audit Summary ==="
+        echo "Audit completed on: $(date)"
+        echo "Host: @@option.db_host@@"
+        echo -e "\nRecommendations:"
+        echo "1. Review and fix any warnings found above"
+        echo "2. Ensure all users have strong passwords"
+        echo "3. Remove unnecessary privileges"
+        echo "4. Enable SSL/TLS for connections"
+        echo "5. Regular security audits should be performed"
+      scriptInterpreter: /bin/bash
+    keepgoing: true
+    strategy: node-first
+  uuid: 87869365-f677-4009-9a4c-648ca473712c
+

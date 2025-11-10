@@ -1,0 +1,133 @@
+- defaultTab: nodes
+  description: Optimise la consommation énergétique nocturne et génère le rapport
+    RSE quotidien
+  executionEnabled: true
+  group: Retail
+  id: c3b415e9-3e3e-4226-917e-0c2ee45b3493
+  loglevel: INFO
+  name: Gestion Énergie et Développement Durable
+  nodeFilterEditable: true
+  notification:
+    onfailure:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onstart:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onsuccess:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+  notifyAvgDurationThreshold: null
+  plugins:
+    ExecutionLifecycle: null
+  schedule:
+    dayofmonth:
+      day: '*'
+    month: '*'
+    time:
+      hour: '01'
+      minute: '00'
+      seconds: '0'
+    year: '*'
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+
+        echo "========================================"
+        echo "🌱 GESTION ÉNERGIE & DÉVELOPPEMENT DURABLE"
+        echo "========================================"
+        echo "Début de l'optimisation à $(date)"
+        echo ""
+
+        # Analyse consommation
+        echo "[$(date +%H:%M:%S)] Analyse de la consommation du jour..."
+        echo "⚡ CONSOMMATION ÉNERGÉTIQUE"
+        echo "==========================="
+        sleep 2
+        echo "Électricité: 1,247 kWh (-12% vs moyenne)"
+        echo "Eau: 8,340 litres"
+        echo "Gaz: 234 m³"
+        echo "Coût total: €487.50"
+        echo ""
+
+        # Mode nuit
+        echo "[$(date +%H:%M:%S)] Activation du mode économie nocturne..."
+        echo "🌙 PASSAGE EN MODE NUIT"
+        echo "========================"
+        sleep 2
+        echo "[$(date +%H:%M:%S)] ✓ Éclairage réduit à 30%"
+        echo "[$(date +%H:%M:%S)] ✓ Climatisation zone publique: OFF"
+        echo "[$(date +%H:%M:%S)] ✓ Escalators: Mode veille"
+        echo "[$(date +%H:%M:%S)] ✓ Musique d'ambiance: OFF"
+        echo "[$(date +%H:%M:%S)] ✓ Écrans publicitaires: OFF"
+        echo "💰 Économie estimée: €42/nuit"
+        echo ""
+
+        # Gestion déchets
+        echo "[$(date +%H:%M:%S)] Bilan déchets et recyclage..."
+        echo "♻️ GESTION DES DÉCHETS DU JOUR"
+        echo "==============================="
+        sleep 2
+        echo "📦 Cartons: 127 kg → Centre recyclage"
+        echo "🥬 Organiques: 89 kg → Compostage"
+        echo "🍶 Plastiques: 43 kg → Tri sélectif"
+        echo "📰 Papiers: 31 kg → Recyclage"
+        echo "🗑️ Ordures ménagères: 156 kg"
+        echo ""
+        echo "Taux de valorisation: 78.3% ✓"
+        echo "Objectif mensuel: 75% ✅"
+        echo ""
+
+        # Produits périmés
+        echo "[$(date +%H:%M:%S)] Gestion des invendus..."
+        echo "🥫 REDISTRIBUTION INVENDUS"
+        echo "=========================="
+        sleep 2
+        echo "32 kg → Association 'Restos du Cœur'"
+        echo "18 kg → Banque Alimentaire"
+        echo "12 kg → Application Too Good To Go"
+        echo "Total sauvé de la destruction: 62 kg 🎉"
+        echo ""
+
+        # Optimisations détectées
+        echo "[$(date +%H:%M:%S)] Calcul des optimisations..."
+        echo "🔧 OPTIMISATIONS IDENTIFIÉES"
+        echo "============================"
+        sleep 2
+        echo "1. Fuite d'eau détectée: Sanitaire H3"
+        echo "2. Surconsommation: Chambre froide #2"
+        echo "3. Éclairage inutile: Zone stockage B"
+        echo "4. Potentiel solaire: 127 kWh/jour"
+        echo ""
+
+        # Rapport RSE
+        echo "[$(date +%H:%M:%S)] Génération du rapport RSE..."
+        sleep 2
+        echo "📊 INDICATEURS RSE DU JOUR"
+        echo "=========================="
+        echo "🌍 Empreinte carbone: 2.1 tonnes CO₂"
+        echo "💧 Eau économisée: 340 litres"
+        echo "♻️ Déchets valorisés: 290 kg"
+        echo "🤝 Impact social: 85 familles aidées"
+        echo "🌳 Équivalent arbres: 12 arbres/jour"
+        echo ""
+
+        # Programmation équipements
+        echo "[$(date +%H:%M:%S)] Programmation des équipements..."
+        echo "[$(date +%H:%M:%S)] ✓ Redémarrage progressif prévu à 5h30"
+        echo "[$(date +%H:%M:%S)] ✓ Préchauffage boulangerie: 4h00"
+        echo "[$(date +%H:%M:%S)] ✓ Alertes maintenance programmées"
+        echo ""
+        echo "✅ Optimisation énergétique activée - Économies en cours!"
+      scriptInterpreter: bash
+    keepgoing: true
+    strategy: node-first
+  uuid: c3b415e9-3e3e-4226-917e-0c2ee45b3493
+

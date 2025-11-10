@@ -1,0 +1,159 @@
+- defaultTab: nodes
+  description: Prépare automatiquement l'ouverture des magasins pour le lendemain
+    matin
+  executionEnabled: true
+  group: Retail
+  id: 1b37c207-81bf-4594-9ce5-9ecce1c75064
+  loglevel: INFO
+  name: Préparation Ouverture Automatique
+  nodeFilterEditable: true
+  notification:
+    onfailure:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onstart:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onsuccess:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+  notifyAvgDurationThreshold: null
+  options:
+  - description: Activer l'intégration météo
+    name: meteo_api
+    type: Boolean
+    value: 'true'
+  - description: Envoyer notifications aux managers
+    name: notification_managers
+    type: Boolean
+    value: 'true'
+  plugins:
+    ExecutionLifecycle: null
+  schedule:
+    dayofmonth:
+      day: '*'
+    month: '*'
+    time:
+      hour: '03'
+      minute: '00'
+      seconds: '0'
+    year: '*'
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+
+        echo "========================================"
+        echo "🌅 PRÉPARATION OUVERTURE AUTOMATIQUE"
+        echo "========================================"
+        echo "Préparation pour ouverture $(date -d tomorrow +'%A %d %B %Y')"
+        echo ""
+
+        # Météo et prévisions
+        echo "[$(date +%H:%M:%S)] Récupération des prévisions météo..."
+        echo "☀️ MÉTÉO DE DEMAIN"
+        echo "=================="
+        sleep 2
+        echo "Matin: 18°C ☁️ Nuageux"
+        echo "Après-midi: 24°C ☀️ Ensoleillé"
+        echo "Impact prévu: +20% boissons fraîches, +15% glaces"
+        echo ""
+
+        # Planning personnel
+        echo "[$(date +%H:%M:%S)] Vérification du planning..."
+        echo "👥 PERSONNEL DEMAIN"
+        echo "==================="
+        sleep 2
+        echo "Ouverture 8h30:"
+        echo "✓ Chef de rayon: Marie Dupont"
+        echo "✓ Caissiers: 4/4 confirmés"
+        echo "✓ Mise en rayon: 3/3 confirmés"
+        echo "✓ Sécurité: 1/1 confirmé"
+        echo ""
+        echo "⚠️ Absence prévue: Jean Martin (Boulangerie)"
+        echo "→ Remplacement: Sophie Bernard ✓"
+        echo ""
+
+        # Livraisons du matin
+        echo "[$(date +%H:%M:%S)] Préparation des réceptions..."
+        echo "📦 LIVRAISONS ATTENDUES"
+        echo "======================="
+        sleep 2
+        echo "06h00 - Boulangerie: 500 baguettes, 200 croissants"
+        echo "06h30 - Produits laitiers: Palette #A247, #A248"
+        echo "07h00 - Fruits/Légumes: 40 cagettes"
+        echo "07h30 - Journaux/Magazines: Livraison presse"
+        echo ""
+        echo "Zone de réception préparée ✓"
+        echo "Transpalettes chargés ✓"
+        echo ""
+
+        # Préparation des rayons
+        echo "[$(date +%H:%M:%S)] Configuration des rayons prioritaires..."
+        echo "🛒 MISE EN AVANT DEMAIN"
+        echo "======================="
+        sleep 2
+        echo "ENTRÉE MAGASIN:"
+        echo "• Promotion: Barbecue -30%"
+        echo "• Saisonnier: Parasols et glacières"
+        echo "• Flash: Melons de Cavaillon"
+        echo ""
+        echo "TÊTE DE GONDOLE:"
+        echo "• TG1: Bières artisanales (Match PSG)"
+        echo "• TG2: Crèmes solaires"
+        echo "• TG3: Salades préparées"
+        echo ""
+
+        # Systèmes et équipements
+        echo "[$(date +%H:%M:%S)] Programmation des systèmes..."
+        echo "⚙️ DÉMARRAGE AUTOMATIQUE"
+        echo "========================"
+        sleep 2
+        echo "05h30 → Éclairage zones de travail"
+        echo "06h00 → Chambres froides mode jour"
+        echo "06h30 → Fours boulangerie"
+        echo "07h00 → Musique d'ambiance"
+        echo "07h30 → Climatisation zones publiques"
+        echo "08h00 → Écrans promotionnels"
+        echo "08h15 → Ouverture portes automatiques"
+        echo "08h25 → Message d'accueil"
+        echo ""
+
+        # Check-list finale
+        echo "[$(date +%H:%M:%S)] Génération de la check-list..."
+        echo "📋 CHECK-LIST OUVERTURE"
+        echo "======================="
+        sleep 2
+        echo "□ Désactiver alarme principale"
+        echo "□ Vérifier caisses (fond: €150/caisse)"
+        echo "□ Contrôler dates produits frais"
+        echo "□ Allumer éclairage commercial"
+        echo "□ Vérifier propreté entrée"
+        echo "□ Actualiser panneau promotions"
+        echo "□ Brief équipe 8h15"
+        echo ""
+        echo "[$(date +%H:%M:%S)] ✓ Check-list envoyée sur mobile chef de rayon"
+        echo ""
+
+        # Message de bienvenue
+        echo "[$(date +%H:%M:%S)] Programmation message du jour..."
+        sleep 1
+        echo "📢 MESSAGE DU JOUR"
+        echo "=================="
+        echo "'Bonjour et bienvenue chez Carrefour!"
+        echo "Aujourd'hui, profitez de -30% sur tout"
+        echo "le rayon barbecue. Belle journée ensoleillée"
+        echo "en perspective, pensez à nos produits frais!'"
+        echo ""
+        echo "✅ Magasins prêts pour l'ouverture de demain!"
+      scriptInterpreter: bash
+    keepgoing: true
+    strategy: sequential
+  uuid: 1b37c207-81bf-4594-9ce5-9ecce1c75064
+

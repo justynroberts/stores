@@ -1,0 +1,140 @@
+- defaultTab: nodes
+  description: 'Contrôle automatique des dates limites, gestion des produits en fin
+    de vie et actions anti-gaspillage'
+  executionEnabled: true
+  group: Retail
+  id: 21c0a70e-6a5f-4dc8-bfd5-42777b3628ce
+  loglevel: INFO
+  name: Gestion Fraîcheur et DLC Automatique
+  nodeFilterEditable: true
+  notification:
+    onfailure:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onstart:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+    onsuccess:
+      format: json
+      httpMethod: post
+      urls: http://172.31.46.107:9200/carrefour/_doc/
+  notifyAvgDurationThreshold: null
+  plugins:
+    ExecutionLifecycle: null
+  schedule:
+    dayofmonth:
+      day: '*'
+    month: '*'
+    time:
+      hour: '19'
+      minute: '30'
+      seconds: '0'
+    year: '*'
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+
+        echo "========================================"
+        echo "🥗 GESTION FRAÎCHEUR ET DLC AUTOMATIQUE"
+        echo "========================================"
+        echo "Contrôle quotidien du $(date +'%d/%m/%Y')"
+        echo ""
+
+        # Scan des produits
+        echo "[$(date +%H:%M:%S)] Scan des codes-barres et DLC..."
+        echo "📊 ANALYSE DES DATES LIMITES"
+        echo "============================="
+        sleep 2
+        echo "Produits scannés: 12,847"
+        echo "Technologies: RFID + Codes-barres + IA"
+        echo ""
+
+        # Produits critiques J+1
+        echo "🔴 PÉREMPTION DEMAIN (J+1)"
+        echo "==========================="
+        sleep 2
+        echo "ACTIONS IMMÉDIATES:"
+        echo "• 24x Yaourts nature → -50% dès ouverture"
+        echo "• 18x Salades composées → -60% + sticker"
+        echo "• 12x Sandwichs club → Too Good To Go"
+        echo "• 8x Plats cuisinés → Don association 18h"
+        echo "Total valeur: €186.40"
+        echo ""
+
+        # Produits J+2 et J+3
+        echo "🟡 PÉREMPTION J+2 à J+3"
+        echo "========================"
+        sleep 2
+        echo "À SURVEILLER:"
+        echo "• 156x Produits laitiers → Mise en avant"
+        echo "• 89x Viandes fraîches → Promotion -30%"
+        echo "• 67x Pâtisseries → Rotation FIFO stricte"
+        echo "• 45x Fruits coupés → Dégustation gratuite"
+        echo ""
+
+        # Optimisation anti-gaspi
+        echo "[$(date +%H:%M:%S)] Activation stratégies anti-gaspillage..."
+        echo "♻️ ACTIONS ANTI-GASPILLAGE"
+        echo "==========================="
+        sleep 3
+        echo "1. TRANSFORMATION PRODUITS:"
+        echo "   • Bananes trop mûres → Smoothies bar (32kg)"
+        echo "   • Légumes défraîchis → Soupes maison (28kg)"
+        echo "   • Pain de la veille → Chapelure/croûtons (15kg)"
+        echo ""
+        echo "2. PROMOTIONS DYNAMIQUES:"
+        echo "   • 17h00: -20% produits J+3"
+        echo "   • 19h00: -40% produits J+2"
+        echo "   • 20h30: -60% dernière chance"
+        echo ""
+        echo "3. PARTENARIATS:"
+        echo "   • Too Good To Go: 25 paniers préparés"
+        echo "   • Restos du Cœur: Collecte 18h30"
+        echo "   • Compost local: Bac rempli à 60%"
+        echo ""
+
+        # Alertes automatiques
+        echo "[$(date +%H:%M:%S)] Envoi des alertes aux responsables..."
+        echo "📱 NOTIFICATIONS ENVOYÉES"
+        echo "========================="
+        sleep 2
+        echo "✓ Chef rayon frais: Liste produits J+1"
+        echo "✓ Responsable promo: Étiquettes à imprimer"
+        echo "✓ Too Good To Go: Paniers disponibles"
+        echo "✓ Associations: Horaire de collecte"
+        echo ""
+
+        # Statistiques et KPI
+        echo "[$(date +%H:%M:%S)] Calcul des indicateurs..."
+        echo "📈 PERFORMANCE FRAÎCHEUR"
+        echo "========================"
+        sleep 2
+        echo "Taux de casse: 1.8% (objectif: <2%) ✅"
+        echo "Valorisation déchets: 84% (↑ +6%)"
+        echo "Économie réalisée: €2,847 ce mois"
+        echo "Score fraîcheur client: 4.6/5 ⭐"
+        echo "CO₂ évité: 347 kg"
+        echo ""
+
+        # Commandes ajustées
+        echo "[$(date +%H:%M:%S)] Ajustement des commandes..."
+        echo "🎯 OPTIMISATION COMMANDES"
+        echo "========================="
+        sleep 1
+        echo "Réduction automatique appliquée:"
+        echo "• Yaourts: -15% (surstock détecté)"
+        echo "• Salades: -20% (météo défavorable)"
+        echo "• Fruits exotiques: -10% (rotation lente)"
+        echo ""
+        echo "✅ Gestion fraîcheur optimisée - Zéro gaspillage en vue!"
+      scriptInterpreter: bash
+    keepgoing: true
+    strategy: node-first
+  uuid: 21c0a70e-6a5f-4dc8-bfd5-42777b3628ce
+

@@ -1,0 +1,18 @@
+- defaultTab: nodes
+  description: ''
+  executionEnabled: true
+  id: 23309f99-ed49-44cb-b168-c0bdd2f41bb2
+  loglevel: INFO
+  name: Justyn
+  nodeFilterEditable: false
+  plugins:
+    ExecutionLifecycle: {}
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - exec: echo "justyn"
+    keepgoing: false
+    strategy: node-first
+  uuid: 23309f99-ed49-44cb-b168-c0bdd2f41bb2
+

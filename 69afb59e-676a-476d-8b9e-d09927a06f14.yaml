@@ -1,0 +1,148 @@
+- description: Analyzes MySQL performance metrics and provides tuning recommendations
+  executionEnabled: true
+  group: MySQL-DBA
+  id: 69afb59e-676a-476d-8b9e-d09927a06f14
+  loglevel: INFO
+  name: MySQL - Performance Tuning Analysis
+  nodeFilterEditable: true
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: true
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '1'
+    filter: 'tags: mysql-server'
+  nodesSelectedByDefault: true
+  options:
+  - description: MySQL host address
+    name: db_host
+    required: true
+    value: localhost
+  - description: MySQL password
+    name: db_password
+    required: true
+    secure: true
+  - description: MySQL user with access to performance metrics
+    name: db_user
+    required: true
+    value: performance_user
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - description: Check InnoDB buffer pool usage
+      interpreterArgsQuoted: false
+      script: "#!/bin/bash\nDB_USER=\"@@option.db_user@@\"\nDB_PASSWORD=\"@@option.db_password@@\"\
+        \nDB_HOST=\"@@option.db_host@@\"\n\necho \"=== InnoDB Buffer Pool Analysis\
+        \ ===\"\nmysql -h \"$DB_HOST\" -u \"$DB_USER\" -p\"$DB_PASSWORD\" -e \"\n\
+        SELECT \n    ROUND(@@innodb_buffer_pool_size/1024/1024/1024, 2) AS 'Buffer\
+        \ Pool Size (GB)',\n    ROUND((SELECT SUM(data_size)/1024/1024/1024 FROM information_schema.innodb_buffer_page\
+        \ WHERE page_type = 'INDEX'), 2) AS 'Data in Buffer (GB)',\n    ROUND(100\
+        \ * (SELECT SUM(data_size) FROM information_schema.innodb_buffer_page WHERE\
+        \ page_type = 'INDEX') / @@innodb_buffer_pool_size, 2) AS 'Buffer Pool Usage\
+        \ %'\n;\" 2>/dev/null\n\necho -e \"\\n=== Buffer Pool Hit Ratio ===\"\nmysql\
+        \ -h \"$DB_HOST\" -u \"$DB_USER\" -p\"$DB_PASSWORD\" -e \"\nSELECT \n    ROUND(100\
+        \ - (100 * (Innodb_buffer_pool_reads / Innodb_buffer_pool_read_requests)),\
+        \ 2) AS 'Buffer Pool Hit Ratio %'\nFROM (\n    SELECT \n        (SELECT VARIABLE_VALUE\
+        \ FROM information_schema.global_status WHERE VARIABLE_NAME = 'Innodb_buffer_pool_reads')\
+        \ AS Innodb_buffer_pool_reads,\n        (SELECT VARIABLE_VALUE FROM information_schema.global_status\
+        \ WHERE VARIABLE_NAME = 'Innodb_buffer_pool_read_requests') AS Innodb_buffer_pool_read_requests\n\
+        ) AS bp_stats;\" 2>/dev/null"
+      scriptInterpreter: /bin/bash
+    - description: Analyze query cache performance
+      interpreterArgsQuoted: false
+      script: "#!/bin/bash\nDB_USER=\"@@option.db_user@@\"\nDB_PASSWORD=\"@@option.db_password@@\"\
+        \nDB_HOST=\"@@option.db_host@@\"\n\necho \"=== Query Cache Analysis ===\"\n\
+        QC_ENABLED=$(mysql -h \"$DB_HOST\" -u \"$DB_USER\" -p\"$DB_PASSWORD\" -e \"\
+        SELECT @@query_cache_type;\" -s -N 2>/dev/null)\n\nif [ \"$QC_ENABLED\" ==\
+        \ \"0\" ] || [ \"$QC_ENABLED\" == \"OFF\" ]; then\n    echo \"Query cache\
+        \ is disabled (recommended for MySQL 5.7+)\"\nelse\n    mysql -h \"$DB_HOST\"\
+        \ -u \"$DB_USER\" -p\"$DB_PASSWORD\" -e \"\n    SELECT \n        ROUND(@@query_cache_size/1024/1024,\
+        \ 2) AS 'Query Cache Size (MB)',\n        (SELECT VARIABLE_VALUE FROM information_schema.global_status\
+        \ WHERE VARIABLE_NAME = 'Qcache_hits') AS 'Cache Hits',\n        (SELECT VARIABLE_VALUE\
+        \ FROM information_schema.global_status WHERE VARIABLE_NAME = 'Qcache_inserts')\
+        \ AS 'Cache Inserts',\n        ROUND(100 * (SELECT VARIABLE_VALUE FROM information_schema.global_status\
+        \ WHERE VARIABLE_NAME = 'Qcache_hits') / \n            ((SELECT VARIABLE_VALUE\
+        \ FROM information_schema.global_status WHERE VARIABLE_NAME = 'Qcache_hits')\
+        \ + \n             (SELECT VARIABLE_VALUE FROM information_schema.global_status\
+        \ WHERE VARIABLE_NAME = 'Qcache_inserts')), 2) AS 'Hit Ratio %'\n    ;\" 2>/dev/null\n\
+        fi"
+      scriptInterpreter: /bin/bash
+    - description: Check table and key cache statistics
+      interpreterArgsQuoted: false
+      script: "#!/bin/bash\nDB_USER=\"@@option.db_user@@\"\nDB_PASSWORD=\"@@option.db_password@@\"\
+        \nDB_HOST=\"@@option.db_host@@\"\n\necho \"=== Table Cache Analysis ===\"\n\
+        mysql -h \"$DB_HOST\" -u \"$DB_USER\" -p\"$DB_PASSWORD\" -e \"\nSELECT \n\
+        \    @@table_open_cache AS 'Table Cache Size',\n    (SELECT VARIABLE_VALUE\
+        \ FROM information_schema.global_status WHERE VARIABLE_NAME = 'Open_tables')\
+        \ AS 'Open Tables',\n    (SELECT VARIABLE_VALUE FROM information_schema.global_status\
+        \ WHERE VARIABLE_NAME = 'Opened_tables') AS 'Opened Tables (Total)',\n   \
+        \ ROUND(100 * (SELECT VARIABLE_VALUE FROM information_schema.global_status\
+        \ WHERE VARIABLE_NAME = 'Table_open_cache_misses') /\n        (SELECT VARIABLE_VALUE\
+        \ FROM information_schema.global_status WHERE VARIABLE_NAME = 'Table_open_cache_hits'),\
+        \ 2) AS 'Cache Miss Rate %'\n;\" 2>/dev/null\n\necho -e \"\\n=== Key Buffer\
+        \ Analysis (MyISAM) ===\"\nmysql -h \"$DB_HOST\" -u \"$DB_USER\" -p\"$DB_PASSWORD\"\
+        \ -e \"\nSELECT \n    ROUND(@@key_buffer_size/1024/1024, 2) AS 'Key Buffer\
+        \ Size (MB)',\n    ROUND(100 * (1 - ((SELECT VARIABLE_VALUE FROM information_schema.global_status\
+        \ WHERE VARIABLE_NAME = 'Key_reads') /\n        (SELECT VARIABLE_VALUE FROM\
+        \ information_schema.global_status WHERE VARIABLE_NAME = 'Key_read_requests'))),\
+        \ 2) AS 'Key Buffer Hit Ratio %'\n;\" 2>/dev/null"
+      scriptInterpreter: /bin/bash
+    - description: Analyze temporary table usage
+      interpreterArgsQuoted: false
+      script: "#!/bin/bash\nDB_USER=\"@@option.db_user@@\"\nDB_PASSWORD=\"@@option.db_password@@\"\
+        \nDB_HOST=\"@@option.db_host@@\"\n\necho \"=== Temporary Table Analysis ===\"\
+        \nmysql -h \"$DB_HOST\" -u \"$DB_USER\" -p\"$DB_PASSWORD\" -e \"\nSELECT \n\
+        \    (SELECT VARIABLE_VALUE FROM information_schema.global_status WHERE VARIABLE_NAME\
+        \ = 'Created_tmp_tables') AS 'Temp Tables Created',\n    (SELECT VARIABLE_VALUE\
+        \ FROM information_schema.global_status WHERE VARIABLE_NAME = 'Created_tmp_disk_tables')\
+        \ AS 'Temp Tables on Disk',\n    ROUND(100 * (SELECT VARIABLE_VALUE FROM information_schema.global_status\
+        \ WHERE VARIABLE_NAME = 'Created_tmp_disk_tables') /\n        (SELECT VARIABLE_VALUE\
+        \ FROM information_schema.global_status WHERE VARIABLE_NAME = 'Created_tmp_tables'),\
+        \ 2) AS 'Disk Temp Table %',\n    ROUND(@@tmp_table_size/1024/1024, 2) AS\
+        \ 'Max Temp Table Size (MB)',\n    ROUND(@@max_heap_table_size/1024/1024,\
+        \ 2) AS 'Max Heap Table Size (MB)'\n;\" 2>/dev/null"
+      scriptInterpreter: /bin/bash
+    - description: Check for inefficient queries
+      interpreterArgsQuoted: false
+      script: "#!/bin/bash\nDB_USER=\"@@option.db_user@@\"\nDB_PASSWORD=\"@@option.db_password@@\"\
+        \nDB_HOST=\"@@option.db_host@@\"\n\necho \"=== Query Efficiency Metrics ===\"\
+        \nmysql -h \"$DB_HOST\" -u \"$DB_USER\" -p\"$DB_PASSWORD\" -e \"\nSELECT \n\
+        \    (SELECT VARIABLE_VALUE FROM information_schema.global_status WHERE VARIABLE_NAME\
+        \ = 'Select_full_join') AS 'Full Joins (No Index)',\n    (SELECT VARIABLE_VALUE\
+        \ FROM information_schema.global_status WHERE VARIABLE_NAME = 'Select_scan')\
+        \ AS 'Full Table Scans',\n    (SELECT VARIABLE_VALUE FROM information_schema.global_status\
+        \ WHERE VARIABLE_NAME = 'Sort_merge_passes') AS 'Sort Merge Passes',\n   \
+        \ (SELECT VARIABLE_VALUE FROM information_schema.global_status WHERE VARIABLE_NAME\
+        \ = 'Handler_read_rnd_next') AS 'Sequential Reads'\n;\" 2>/dev/null\n\necho\
+        \ -e \"\\n=== Top 5 Queries by Execution Time (if Performance Schema enabled)\
+        \ ===\"\nmysql -h \"$DB_HOST\" -u \"$DB_USER\" -p\"$DB_PASSWORD\" -e \"\n\
+        SELECT \n    SUBSTR(DIGEST_TEXT, 1, 100) AS 'Query',\n    COUNT_STAR AS 'Executions',\n\
+        \    ROUND(AVG_TIMER_WAIT/1000000000, 3) AS 'Avg Time (ms)',\n    ROUND(SUM_TIMER_WAIT/1000000000,\
+        \ 3) AS 'Total Time (ms)'\nFROM performance_schema.events_statements_summary_by_digest\n\
+        WHERE DIGEST_TEXT NOT LIKE '%performance_schema%'\nORDER BY SUM_TIMER_WAIT\
+        \ DESC\nLIMIT 5;\" 2>/dev/null || echo \"Performance Schema not enabled or\
+        \ accessible\""
+      scriptInterpreter: /bin/bash
+    - description: Generate tuning recommendations
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "=== Performance Tuning Recommendations ==="
+        echo "Based on the analysis above, consider the following:"
+        echo ""
+        echo "1. Buffer Pool: Ensure innodb_buffer_pool_size is 70-80% of available RAM"
+        echo "2. Table Cache: Increase table_open_cache if seeing many cache misses"
+        echo "3. Temp Tables: Increase tmp_table_size/max_heap_table_size if many go to disk"
+        echo "4. Query Optimization: Review queries with full table scans or no indexes"
+        echo "5. Connection Pool: Monitor max_connections vs actual connections"
+        echo ""
+        echo "Run this analysis during peak hours for most accurate results"
+      scriptInterpreter: /bin/bash
+    keepgoing: true
+    strategy: node-first
+  uuid: 69afb59e-676a-476d-8b9e-d09927a06f14
+

@@ -1,0 +1,407 @@
+- description: 'Comprehensive Redis server health check and diagnostics. Checks service
+    status, memory usage, performance metrics, replication, persistence, and generates
+    a summary report.'
+  executionEnabled: true
+  group: Diagnostics/Database
+  id: d981fb15-a30b-4951-9ea7-2ab5f175d8b1
+  loglevel: INFO
+  multipleExecutions: true
+  name: Redis Server Diagnostics
+  nodeFilterEditable: true
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: false
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '1'
+    filter: 'name: .*'
+  nodesSelectedByDefault: true
+  options:
+  - description: Redis authentication password (if required)
+    name: redis_auth
+    secure: true
+  - description: Redis server hostname or IP address
+    name: redis_host
+    value: localhost
+    values:
+    - localhost
+    - redis
+    - redis-server
+    valuesListDelimiter: ','
+  - description: Redis server port
+    name: redis_port
+    regex: ^[0-9]+$
+    value: '6379'
+  plugins:
+    ExecutionLifecycle: null
+  retry: '0'
+  scheduleEnabled: false
+  schedules: []
+  sequence:
+    commands:
+    - description: System Information
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "════════════════════════════════════════════"
+        echo "     REDIS DIAGNOSTICS REPORT"
+        echo "════════════════════════════════════════════"
+        echo "Host: $(hostname)"
+        echo "Date: $(date)"
+        echo "User: $(whoami)"
+        echo "════════════════════════════════════════════"
+        echo ""
+      scriptInterpreter: /bin/bash
+    - description: Check Redis Service Status
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "📋 CHECKING REDIS SERVICE STATUS"
+        echo "--------------------------------"
+        if command -v systemctl &> /dev/null; then
+            systemctl status redis-server 2>/dev/null || systemctl status redis 2>/dev/null || echo "⚠️  Redis service not found via systemd"
+        elif command -v service &> /dev/null; then
+            service redis-server status 2>/dev/null || service redis status 2>/dev/null || echo "⚠️  Redis service not found via init.d"
+        else
+            echo "⚠️  No service management system found"
+        fi
+        echo ""
+      scriptInterpreter: /bin/bash
+    - description: Check Redis Process
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "🔍 REDIS PROCESS CHECK"
+        echo "----------------------"
+        REDIS_PROC=$(ps aux | grep -E "[r]edis-server")
+        if [ -n "$REDIS_PROC" ]; then
+            echo "✅ Redis process is running:"
+            echo "$REDIS_PROC" | head -5
+        else
+            echo "❌ No Redis process found"
+        fi
+        echo ""
+      scriptInterpreter: /bin/bash
+    - description: Test Redis Connectivity
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "🔌 REDIS CONNECTIVITY TEST"
+        echo "--------------------------"
+        REDIS_HOST=${option.redis_host:-localhost}
+        REDIS_PORT=${option.redis_port:-6379}
+        REDIS_AUTH=${option.redis_auth:-}
+
+        if [ -n "$REDIS_AUTH" ]; then
+            AUTH_CMD="-a $REDIS_AUTH"
+        else
+            AUTH_CMD=""
+        fi
+
+        if redis-cli -h $REDIS_HOST -p $REDIS_PORT $AUTH_CMD ping 2>/dev/null | grep -q PONG; then
+            echo "✅ Redis is responding on $REDIS_HOST:$REDIS_PORT"
+        else
+            echo "❌ Redis is NOT responding on $REDIS_HOST:$REDIS_PORT"
+            echo "   Attempting to diagnose connection issue..."
+            nc -zv $REDIS_HOST $REDIS_PORT 2>&1 || echo "   Port $REDIS_PORT appears to be closed"
+        fi
+        echo ""
+      scriptInterpreter: /bin/bash
+    - description: Redis Version and Uptime
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "ℹ️  REDIS VERSION AND UPTIME"
+        echo "---------------------------"
+        REDIS_HOST=${option.redis_host:-localhost}
+        REDIS_PORT=${option.redis_port:-6379}
+        REDIS_AUTH=${option.redis_auth:-}
+
+        if [ -n "$REDIS_AUTH" ]; then
+            AUTH_CMD="-a $REDIS_AUTH"
+        else
+            AUTH_CMD=""
+        fi
+
+        redis-cli -h $REDIS_HOST -p $REDIS_PORT $AUTH_CMD INFO server 2>/dev/null | grep -E "redis_version:|uptime_in_seconds:|uptime_in_days:|tcp_port:|config_file:" | while read line; do
+            echo "  $line"
+        done
+        echo ""
+      scriptInterpreter: /bin/bash
+    - description: Memory Usage Analysis
+      interpreterArgsQuoted: false
+      script: "#!/bin/bash\necho \"💾 MEMORY USAGE ANALYSIS\"\necho \"------------------------\"\
+        \nREDIS_HOST=${option.redis_host:-localhost}\nREDIS_PORT=${option.redis_port:-6379}\n\
+        REDIS_AUTH=${option.redis_auth:-}\n\nif [ -n \"$REDIS_AUTH\" ]; then\n   \
+        \ AUTH_CMD=\"-a $REDIS_AUTH\"\nelse\n    AUTH_CMD=\"\"\nfi\n\nMEM_INFO=$(redis-cli\
+        \ -h $REDIS_HOST -p $REDIS_PORT $AUTH_CMD INFO memory 2>/dev/null)\nif [ -n\
+        \ \"$MEM_INFO\" ]; then\n    echo \"$MEM_INFO\" | grep -E \"used_memory_human:|used_memory_peak_human:|used_memory_rss_human:|mem_fragmentation_ratio:|maxmemory_human:|used_memory_overhead:|used_memory_dataset:\"\
+        \ | while read line; do\n        echo \"  $line\"\n    done\n    \n    # Check\
+        \ memory fragmentation\n    FRAG_RATIO=$(echo \"$MEM_INFO\" | grep \"mem_fragmentation_ratio:\"\
+        \ | cut -d: -f2 | xargs)\n    if (( $(echo \"$FRAG_RATIO > 1.5\" | bc -l)\
+        \ )); then\n        echo \"  ⚠️  High memory fragmentation detected: $FRAG_RATIO\"\
+        \n    fi\nelse\n    echo \"  ❌ Unable to retrieve memory information\"\nfi\n\
+        echo \"\""
+      scriptInterpreter: /bin/bash
+    - description: Replication Status
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "🔄 REPLICATION STATUS"
+        echo "--------------------"
+        REDIS_HOST=${option.redis_host:-localhost}
+        REDIS_PORT=${option.redis_port:-6379}
+        REDIS_AUTH=${option.redis_auth:-}
+
+        if [ -n "$REDIS_AUTH" ]; then
+            AUTH_CMD="-a $REDIS_AUTH"
+        else
+            AUTH_CMD=""
+        fi
+
+        REPL_INFO=$(redis-cli -h $REDIS_HOST -p $REDIS_PORT $AUTH_CMD INFO replication 2>/dev/null)
+        if [ -n "$REPL_INFO" ]; then
+            echo "$REPL_INFO" | grep -v "^#" | grep -v "^$"
+        else
+            echo "  ❌ Unable to retrieve replication information"
+        fi
+        echo ""
+      scriptInterpreter: /bin/bash
+    - description: Client Connections
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "👥 CLIENT CONNECTIONS"
+        echo "--------------------"
+        REDIS_HOST=${option.redis_host:-localhost}
+        REDIS_PORT=${option.redis_port:-6379}
+        REDIS_AUTH=${option.redis_auth:-}
+
+        if [ -n "$REDIS_AUTH" ]; then
+            AUTH_CMD="-a $REDIS_AUTH"
+        else
+            AUTH_CMD=""
+        fi
+
+        redis-cli -h $REDIS_HOST -p $REDIS_PORT $AUTH_CMD INFO clients 2>/dev/null | grep -E "connected_clients:|blocked_clients:|tracking_clients:" | while read line; do
+            echo "  $line"
+        done
+
+        # List current client connections
+        echo ""
+        echo "  Current client list (first 5):"
+        redis-cli -h $REDIS_HOST -p $REDIS_PORT $AUTH_CMD CLIENT LIST 2>/dev/null | head -5 | while read line; do
+            echo "    $line" | cut -c1-80
+        done
+        echo ""
+      scriptInterpreter: /bin/bash
+    - description: Persistence Configuration
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "💾 PERSISTENCE CONFIGURATION"
+        echo "---------------------------"
+        REDIS_HOST=${option.redis_host:-localhost}
+        REDIS_PORT=${option.redis_port:-6379}
+        REDIS_AUTH=${option.redis_auth:-}
+
+        if [ -n "$REDIS_AUTH" ]; then
+            AUTH_CMD="-a $REDIS_AUTH"
+        else
+            AUTH_CMD=""
+        fi
+
+        echo "  RDB (Snapshotting):"
+        redis-cli -h $REDIS_HOST -p $REDIS_PORT $AUTH_CMD CONFIG GET save 2>/dev/null | tail -1 | xargs -I {} echo "    {}"
+        echo ""
+        echo "  AOF (Append Only File):"
+        redis-cli -h $REDIS_HOST -p $REDIS_PORT $AUTH_CMD CONFIG GET appendonly 2>/dev/null | tail -1 | xargs -I {} echo "    Enabled: {}"
+        echo ""
+        echo "  Last save time:"
+        LAST_SAVE=$(redis-cli -h $REDIS_HOST -p $REDIS_PORT $AUTH_CMD LASTSAVE 2>/dev/null)
+        if [ -n "$LAST_SAVE" ]; then
+            echo "    Unix timestamp: $LAST_SAVE"
+            echo "    Human readable: $(date -d @$LAST_SAVE 2>/dev/null || date -r $LAST_SAVE 2>/dev/null || echo 'Unable to convert')"
+        fi
+        echo ""
+      scriptInterpreter: /bin/bash
+    - description: Performance Metrics
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "⚡ PERFORMANCE METRICS"
+        echo "---------------------"
+        REDIS_HOST=${option.redis_host:-localhost}
+        REDIS_PORT=${option.redis_port:-6379}
+        REDIS_AUTH=${option.redis_auth:-}
+
+        if [ -n "$REDIS_AUTH" ]; then
+            AUTH_CMD="-a $REDIS_AUTH"
+        else
+            AUTH_CMD=""
+        fi
+
+        redis-cli -h $REDIS_HOST -p $REDIS_PORT $AUTH_CMD INFO stats 2>/dev/null | grep -E "instantaneous_ops_per_sec:|total_commands_processed:|rejected_connections:|expired_keys:|evicted_keys:|keyspace_hits:|keyspace_misses:|latest_fork_usec:" | while read line; do
+            echo "  $line"
+        done
+
+        # Calculate hit rate
+        STATS=$(redis-cli -h $REDIS_HOST -p $REDIS_PORT $AUTH_CMD INFO stats 2>/dev/null)
+        HITS=$(echo "$STATS" | grep "keyspace_hits:" | cut -d: -f2 | xargs)
+        MISSES=$(echo "$STATS" | grep "keyspace_misses:" | cut -d: -f2 | xargs)
+        if [ -n "$HITS" ] && [ -n "$MISSES" ] && [ "$HITS" -gt 0 -o "$MISSES" -gt 0 ]; then
+            HIT_RATE=$(echo "scale=2; $HITS * 100 / ($HITS + $MISSES)" | bc 2>/dev/null || echo "N/A")
+            echo "  Cache hit rate: ${HIT_RATE}%"
+        fi
+        echo ""
+      scriptInterpreter: /bin/bash
+    - description: Check Redis Logs
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "📝 RECENT LOG ENTRIES"
+        echo "--------------------"
+        # Common Redis log locations
+        LOG_FILES="/var/log/redis/redis-server.log /var/log/redis.log /var/log/redis/redis.log /usr/local/var/log/redis.log"
+
+        LOG_FOUND=false
+        for LOG in $LOG_FILES; do
+            if [ -f "$LOG" ] && [ -r "$LOG" ]; then
+                echo "  Log file: $LOG"
+                echo "  Recent warnings/errors:"
+                tail -100 "$LOG" 2>/dev/null | grep -i -E "warning|error|critical" | tail -10 | while read line; do
+                    echo "    $line" | cut -c1-100
+                done
+                LOG_FOUND=true
+                break
+            fi
+        done
+
+        if [ "$LOG_FOUND" = false ]; then
+            echo "  ⚠️  No readable Redis log file found in standard locations"
+        fi
+        echo ""
+      scriptInterpreter: /bin/bash
+    - description: Key Distribution Analysis
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "🔑 KEY DISTRIBUTION"
+        echo "------------------"
+        REDIS_HOST=${option.redis_host:-localhost}
+        REDIS_PORT=${option.redis_port:-6379}
+        REDIS_AUTH=${option.redis_auth:-}
+
+        if [ -n "$REDIS_AUTH" ]; then
+            AUTH_CMD="-a $REDIS_AUTH"
+        else
+            AUTH_CMD=""
+        fi
+
+        # Get database key counts
+        redis-cli -h $REDIS_HOST -p $REDIS_PORT $AUTH_CMD INFO keyspace 2>/dev/null | grep -E "^db[0-9]+:" | while read line; do
+            echo "  $line"
+        done
+
+        # Sample key analysis (only if not too many keys)
+        DB_SIZE=$(redis-cli -h $REDIS_HOST -p $REDIS_PORT $AUTH_CMD DBSIZE 2>/dev/null | grep -o '[0-9]*')
+        if [ -n "$DB_SIZE" ] && [ "$DB_SIZE" -lt 10000 ] && [ "$DB_SIZE" -gt 0 ]; then
+            echo ""
+            echo "  Key type distribution (sampling 100 random keys):"
+            TYPES=$(redis-cli -h $REDIS_HOST -p $REDIS_PORT $AUTH_CMD --raw EVAL "local types = {} local samples = 100 for i=1,samples do local key = redis.call('RANDOMKEY') if key then local t = redis.call('TYPE', key) types[t] = (types[t] or 0) + 1 end end return cjson.encode(types)" 0 2>/dev/null)
+            if [ -n "$TYPES" ] && [ "$TYPES" != "{}" ]; then
+                echo "    $TYPES"
+            fi
+        fi
+        echo ""
+      scriptInterpreter: /bin/bash
+    - description: Configuration Warnings
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "⚠️  CONFIGURATION WARNINGS"
+        echo "-------------------------"
+        REDIS_HOST=${option.redis_host:-localhost}
+        REDIS_PORT=${option.redis_port:-6379}
+        REDIS_AUTH=${option.redis_auth:-}
+
+        if [ -n "$REDIS_AUTH" ]; then
+            AUTH_CMD="-a $REDIS_AUTH"
+        else
+            AUTH_CMD=""
+        fi
+
+        WARNINGS=0
+
+        # Check if persistence is disabled
+        RDB=$(redis-cli -h $REDIS_HOST -p $REDIS_PORT $AUTH_CMD CONFIG GET save 2>/dev/null | tail -1)
+        AOF=$(redis-cli -h $REDIS_HOST -p $REDIS_PORT $AUTH_CMD CONFIG GET appendonly 2>/dev/null | tail -1)
+        if [ "$RDB" = "" ] && [ "$AOF" = "no" ]; then
+            echo "  ⚠️  No persistence enabled - data will be lost on restart!"
+            WARNINGS=$((WARNINGS + 1))
+        fi
+
+        # Check maxmemory policy
+        MAXMEM=$(redis-cli -h $REDIS_HOST -p $REDIS_PORT $AUTH_CMD CONFIG GET maxmemory 2>/dev/null | tail -1)
+        MAXMEM_POLICY=$(redis-cli -h $REDIS_HOST -p $REDIS_PORT $AUTH_CMD CONFIG GET maxmemory-policy 2>/dev/null | tail -1)
+        if [ "$MAXMEM" != "0" ] && [ "$MAXMEM_POLICY" = "noeviction" ]; then
+            echo "  ⚠️  maxmemory set with noeviction policy - Redis will return errors when memory is full"
+            WARNINGS=$((WARNINGS + 1))
+        fi
+
+        # Check if protected mode is disabled without auth
+        PROTECTED=$(redis-cli -h $REDIS_HOST -p $REDIS_PORT $AUTH_CMD CONFIG GET protected-mode 2>/dev/null | tail -1)
+        REQUIREPASS=$(redis-cli -h $REDIS_HOST -p $REDIS_PORT $AUTH_CMD CONFIG GET requirepass 2>/dev/null | tail -1)
+        if [ "$PROTECTED" = "no" ] && [ -z "$REQUIREPASS" ]; then
+            echo "  ⚠️  Protected mode disabled without password - Redis is exposed!"
+            WARNINGS=$((WARNINGS + 1))
+        fi
+
+        if [ $WARNINGS -eq 0 ]; then
+            echo "  ✅ No critical configuration issues detected"
+        fi
+        echo ""
+      scriptInterpreter: /bin/bash
+    - description: Generate Summary Report
+      interpreterArgsQuoted: false
+      script: "#!/bin/bash\necho \"════════════════════════════════════════════\"\n\
+        echo \"📊 DIAGNOSTICS SUMMARY\"\necho \"══════════════════════════════════\
+        ══════════\"\nREDIS_HOST=${option.redis_host:-localhost}\nREDIS_PORT=${option.redis_port:-6379}\n\
+        REDIS_AUTH=${option.redis_auth:-}\n\nif [ -n \"$REDIS_AUTH\" ]; then\n   \
+        \ AUTH_CMD=\"-a $REDIS_AUTH\"\nelse\n    AUTH_CMD=\"\"\nfi\n\n# Overall health\
+        \ status\nif redis-cli -h $REDIS_HOST -p $REDIS_PORT $AUTH_CMD ping 2>/dev/null\
+        \ | grep -q PONG; then\n    echo \"🟢 Overall Status: HEALTHY\"\n    \n  \
+        \  # Quick metrics\n    INFO=$(redis-cli -h $REDIS_HOST -p $REDIS_PORT $AUTH_CMD\
+        \ INFO 2>/dev/null)\n    \n    UPTIME=$(echo \"$INFO\" | grep \"uptime_in_days:\"\
+        \ | cut -d: -f2 | xargs)\n    MEMORY=$(echo \"$INFO\" | grep \"used_memory_human:\"\
+        \ | cut -d: -f2 | xargs)\n    CLIENTS=$(echo \"$INFO\" | grep \"connected_clients:\"\
+        \ | cut -d: -f2 | xargs)\n    OPS=$(echo \"$INFO\" | grep \"instantaneous_ops_per_sec:\"\
+        \ | cut -d: -f2 | xargs)\n    VERSION=$(echo \"$INFO\" | grep \"redis_version:\"\
+        \ | cut -d: -f2 | xargs)\n    ROLE=$(echo \"$INFO\" | grep \"role:\" | cut\
+        \ -d: -f2 | xargs)\n    \n    echo \"\"\n    echo \"Key Metrics:\"\n    echo\
+        \ \"  • Version: $VERSION\"\n    echo \"  • Role: $ROLE\"\n    echo \"  •\
+        \ Uptime: $UPTIME days\"\n    echo \"  • Memory Used: $MEMORY\"\n    echo\
+        \ \"  • Connected Clients: $CLIENTS\"\n    echo \"  • Operations/sec: $OPS\"\
+        \n    \n    # Performance indicators\n    echo \"\"\n    echo \"Performance\
+        \ Indicators:\"\n    if [ -n \"$OPS\" ] && (( $(echo \"$OPS > 1000\" | bc\
+        \ -l) )); then\n        echo \"  • High throughput detected ($OPS ops/sec)\"\
+        \n    fi\n    \n    FRAG=$(echo \"$INFO\" | grep \"mem_fragmentation_ratio:\"\
+        \ | cut -d: -f2 | xargs)\n    if [ -n \"$FRAG\" ] && (( $(echo \"$FRAG > 1.5\"\
+        \ | bc -l) )); then\n        echo \"  • ⚠️  Memory fragmentation high: $FRAG\"\
+        \n    fi\n    \n    EVICTED=$(echo \"$INFO\" | grep \"evicted_keys:\" | cut\
+        \ -d: -f2 | xargs)\n    if [ -n \"$EVICTED\" ] && [ \"$EVICTED\" -gt 0 ];\
+        \ then\n        echo \"  • ⚠️  Keys evicted due to memory pressure: $EVICTED\"\
+        \n    fi\nelse\n    echo \"🔴 Overall Status: REDIS NOT RESPONDING\"\n   \
+        \ echo \"\"\n    echo \"Troubleshooting steps:\"\n    echo \"  1. Check if\
+        \ Redis service is running\"\n    echo \"  2. Verify connection parameters\
+        \ (host: $REDIS_HOST, port: $REDIS_PORT)\"\n    echo \"  3. Check firewall\
+        \ rules\"\n    echo \"  4. Review Redis logs for errors\"\nfi\n\necho \"\"\
+        \necho \"════════════════════════════════════════════\"\necho \"Report completed\
+        \ at $(date)\"\necho \"════════════════════════════════════════════\""
+      scriptInterpreter: /bin/bash
+    keepgoing: true
+    strategy: node-first
+  timeout: 10m
+  uuid: d981fb15-a30b-4951-9ea7-2ab5f175d8b1
+

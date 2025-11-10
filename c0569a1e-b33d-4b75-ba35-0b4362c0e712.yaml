@@ -1,0 +1,74 @@
+- description: Weekly backup of application files and configurations
+  executionEnabled: true
+  group: Backups
+  id: c0569a1e-b33d-4b75-ba35-0b4362c0e712
+  loglevel: INFO
+  name: Application Files Backup - Weekly
+  nodeFilterEditable: false
+  options:
+  - description: Application name to backup
+    name: app_name
+    required: true
+    value: all
+    values:
+    - all
+    - web-frontend
+    - api-backend
+    - mobile-app
+    valuesListDelimiter: ','
+  - description: Include application logs in backup
+    name: include_logs
+    value: 'false'
+    values:
+    - 'true'
+    - 'false'
+    valuesListDelimiter: ','
+  plugins:
+    ExecutionLifecycle: null
+  schedule:
+    dayofmonth:
+      day: '*'
+    month: '*'
+    time:
+      hour: '03'
+      minute: '00'
+      seconds: '0'
+    year: '*'
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - description: Stop application services
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        if [ "@@option.app_name@@" != "all" ]; then
+            echo "Stopping @@option.app_name@@ service..."
+        else
+            echo "Stopping all application services..."
+        fi
+        sleep 2
+        echo "Services stopped"
+      scriptInterpreter: /bin/bash
+    - description: Backup application files
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "Backing up application files for: @@option.app_name@@"
+        echo "Include logs: @@option.include_logs@@"
+        # Simulate file backup
+        sleep 6
+        echo "Application files backed up successfully"
+      scriptInterpreter: /bin/bash
+    - description: Restart application services
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "Restarting application services..."
+        sleep 2
+        echo "Services restarted successfully"
+      scriptInterpreter: /bin/bash
+    keepgoing: false
+    strategy: node-first
+  uuid: c0569a1e-b33d-4b75-ba35-0b4362c0e712
+

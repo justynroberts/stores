@@ -1,0 +1,99 @@
+- description: Generate daily delivery performance report from Microlise data
+  executionEnabled: true
+  group: API/Microlise
+  id: 1bd88488-82a2-44ef-ace3-b21602c1f1c3
+  loglevel: INFO
+  name: Microlise - Generate Delivery Report
+  nodeFilterEditable: true
+  options:
+  - description: Microlise API endpoint URL
+    name: api_endpoint
+    required: true
+    value: https://api.microlise.com/v2
+  - description: Microlise API authentication key
+    name: api_key
+    required: true
+    secure: true
+  - description: Date for the report (YYYY-MM-DD)
+    name: report_date
+    required: true
+    value: ${date:yyyy-MM-dd}
+  - description: Save full JSON report to file
+    name: save_report
+    required: true
+    value: 'false'
+    values:
+    - 'true'
+    - 'false'
+    valuesListDelimiter: ','
+  - description: Filter by specific store ID (optional)
+    name: store_id
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - description: Generate and display delivery performance report
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+
+        # Configuration
+        API_ENDPOINT="@@option.api_endpoint@@"
+        API_KEY="@@option.api_key@@"
+        REPORT_DATE="@@option.report_date@@"
+        STORE_ID="@@option.store_id@@"
+
+        echo "Generating delivery report for date: $REPORT_DATE"
+        [ -n "$STORE_ID" ] && echo "Store filter: $STORE_ID"
+
+        # Fetch delivery data
+        query_params="date=$REPORT_DATE"
+        [ -n "$STORE_ID" ] && query_params="${query_params}&storeId=$STORE_ID"
+
+        response=$(curl -s -X GET \
+          "${API_ENDPOINT}/reports/deliveries?${query_params}" \
+          -H "Authorization: Bearer ${API_KEY}" \
+          -H "Accept: application/json")
+
+        # Process and display report
+        echo "\n=== CARREFOUR DELIVERY REPORT ==="
+        echo "Date: $REPORT_DATE"
+        [ -n "$STORE_ID" ] && echo "Store: $STORE_ID"
+        echo "Generated: $(date)"
+        echo "================================\n"
+
+        # Extract metrics
+        total_deliveries=$(echo "$response" | jq '.summary.totalDeliveries // 0')
+        successful=$(echo "$response" | jq '.summary.successful // 0')
+        failed=$(echo "$response" | jq '.summary.failed // 0')
+        avg_time=$(echo "$response" | jq '.summary.averageDeliveryTime // 0')
+        on_time_rate=$(echo "$response" | jq '.summary.onTimeRate // 0')
+
+        echo "SUMMARY METRICS:"
+        echo "- Total Deliveries: $total_deliveries"
+        echo "- Successful: $successful"
+        echo "- Failed: $failed"
+        echo "- Success Rate: $(awk "BEGIN {printf \"%.1f\", ($successful/$total_deliveries)*100}")%"
+        echo "- Average Delivery Time: ${avg_time} minutes"
+        echo "- On-Time Rate: ${on_time_rate}%"
+
+        echo "\nTOP ISSUES:"
+        echo "$response" | jq -r '.issues[]? | "- \(.count)x \(.description)"'
+
+        echo "\nDELIVERY BREAKDOWN BY HOUR:"
+        echo "$response" | jq -r '.hourlyBreakdown[]? | "\(.hour):00 - \(.deliveries) deliveries (\(.onTimeRate)% on-time)"'
+
+        # Save full report if requested
+        if [ "@@option.save_report@@" = "true" ]; then
+            report_file="/tmp/delivery_report_${REPORT_DATE}_$(date +%Y%m%d%H%M%S).json"
+            echo "$response" > "$report_file"
+            echo "\nFull report saved to: $report_file"
+        fi
+      scriptInterpreter: /bin/bash
+    keepgoing: false
+    strategy: node-first
+  timeout: 10m
+  uuid: 1bd88488-82a2-44ef-ace3-b21602c1f1c3
+

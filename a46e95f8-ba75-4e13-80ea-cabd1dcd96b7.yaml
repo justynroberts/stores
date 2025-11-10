@@ -1,0 +1,96 @@
+- description: Monitors critical HQ services and sends alerts when services are down
+  executionEnabled: true
+  group: Admin/Monitoring
+  id: a46e95f8-ba75-4e13-80ea-cabd1dcd96b7
+  loglevel: INFO
+  name: HQ Service Health Monitor
+  nodeFilterEditable: true
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: false
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '1'
+    filter: 'tags: hq-server'
+  nodesSelectedByDefault: true
+  notification:
+    onfailure:
+      email:
+        recipients: hq-oncall@carrefour.com
+        subject: HQ Service Monitor Failed
+  notifyAvgDurationThreshold: null
+  options:
+  - description: Email address for alerts
+    name: AlertEmail
+    value: hq-alerts@carrefour.com
+  - description: Comma-separated list of critical services to monitor
+    name: CriticalServices
+    value: 'MSSQLSERVER,W3SVC,HQAppService,HQScheduler'
+  plugins:
+    ExecutionLifecycle: null
+  retry:
+    delay: 30s
+    retry: '2'
+  schedule:
+    dayofmonth:
+      day: '*'
+    month: '*'
+    time:
+      hour: '*'
+      minute: '*/15'
+      seconds: '0'
+    year: '*'
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - interpreterArgsQuoted: false
+      script: "# HQ Service Health Monitor Script\n# Monitors critical HQ services\
+        \ and sends alerts\n\n[CmdletBinding()]\nparam(\n    [string]$LogPath = \"\
+        C:\\HQ\\Logs\\ServiceMonitor\",\n    [string[]]$CriticalServices = @(\"MSSQLSERVER\"\
+        , \"W3SVC\", \"HQAppService\", \"HQScheduler\"),\n    [string]$SMTPServer\
+        \ = \"smtp.carrefour.internal\",\n    [string]$AlertEmail = \"hq-alerts@carrefour.com\"\
+        \n)\n\n# Create log directory if it doesn't exist\nif (!(Test-Path $LogPath))\
+        \ {\n    New-Item -ItemType Directory -Path $LogPath -Force | Out-Null\n}\n\
+        \n$timestamp = Get-Date -Format \"yyyyMMdd_HHmmss\"\n$logFile = Join-Path\
+        \ $LogPath \"ServiceMonitor_$timestamp.log\"\n\nfunction Write-Log {\n   \
+        \ param([string]$Message, [string]$Level = \"INFO\")\n    $logEntry = \"[$(Get-Date\
+        \ -Format 'yyyy-MM-dd HH:mm:ss')] [$Level] $Message\"\n    Add-Content -Path\
+        \ $logFile -Value $logEntry\n    Write-Host $logEntry\n}\n\nWrite-Log \"Starting\
+        \ HQ Service Monitor\" \"INFO\"\n\n$failedServices = @()\n$serviceStatus =\
+        \ @()\n\nforeach ($service in $CriticalServices) {\n    try {\n        $svc\
+        \ = Get-Service -Name $service -ErrorAction Stop\n        $status = @{\n \
+        \           ServiceName = $service\n            Status = $svc.Status\n   \
+        \         StartType = $svc.StartType\n            TimeChecked = Get-Date\n\
+        \        }\n        \n        $serviceStatus += $status\n        \n      \
+        \  if ($svc.Status -ne 'Running') {\n            $failedServices += $service\n\
+        \            Write-Log \"CRITICAL: Service $service is $($svc.Status)\" \"\
+        ERROR\"\n            \n            # Attempt to start the service\n      \
+        \      if ($svc.Status -eq 'Stopped') {\n                Write-Log \"Attempting\
+        \ to start $service...\" \"WARN\"\n                Start-Service -Name $service\
+        \ -ErrorAction Stop\n                Start-Sleep -Seconds 10\n           \
+        \     $svc = Get-Service -Name $service\n                if ($svc.Status -eq\
+        \ 'Running') {\n                    Write-Log \"Successfully started $service\"\
+        \ \"INFO\"\n                    $failedServices = $failedServices | Where-Object\
+        \ {$_ -ne $service}\n                }\n            }\n        } else {\n\
+        \            Write-Log \"Service $service is running normally\" \"INFO\"\n\
+        \        }\n    } catch {\n        Write-Log \"ERROR checking service $service:\
+        \ $_\" \"ERROR\"\n        $failedServices += $service\n    }\n}\n\n# Send\
+        \ alert if services are down\nif ($failedServices.Count -gt 0) {\n    $subject\
+        \ = \"ALERT: HQ Services Down - $($failedServices -join ', ')\"\n    $body\
+        \ = @\"\nThe following critical HQ services are not running:\n\n$($failedServices\
+        \ | ForEach-Object {\"- $_`n\"})\n\nServer: $env:COMPUTERNAME\nTime: $(Get-Date)\n\
+        \nPlease investigate immediately.\n\"@\n    \n    try {\n        Send-MailMessage\
+        \ -To $AlertEmail -From \"hq-monitor@carrefour.com\" `\n            -Subject\
+        \ $subject -Body $body -SmtpServer $SMTPServer -Priority High\n        Write-Log\
+        \ \"Alert email sent to $AlertEmail\" \"WARN\"\n    } catch {\n        Write-Log\
+        \ \"Failed to send alert email: $_\" \"ERROR\"\n    }\n    \n    exit 1\n\
+        } else {\n    Write-Log \"All critical services are running normally\" \"\
+        INFO\"\n    exit 0\n}"
+      scriptInterpreter: powershell.exe -ExecutionPolicy Bypass -File
+    keepgoing: false
+    strategy: node-first
+  timeout: 5m
+  uuid: a46e95f8-ba75-4e13-80ea-cabd1dcd96b7
+

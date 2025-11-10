@@ -1,0 +1,88 @@
+- description: Update delivery status for a specific order in Microlise system
+  executionEnabled: true
+  group: API/Microlise
+  id: 62c3db2a-41ed-43b6-a992-a875372d0d46
+  loglevel: INFO
+  name: Microlise - Update Delivery Status
+  nodeFilterEditable: true
+  options:
+  - description: Microlise API endpoint URL
+    name: api_endpoint
+    required: true
+    value: https://api.microlise.com/v2
+  - description: Microlise API authentication key
+    name: api_key
+    required: true
+    secure: true
+  - description: Additional notes about the status update
+    name: notes
+  - description: Order/Delivery ID to update
+    name: order_id
+    required: true
+  - description: New delivery status
+    name: status
+    required: true
+    values:
+    - pending
+    - in_transit
+    - delivered
+    - failed
+    - cancelled
+    valuesListDelimiter: ','
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - description: Update delivery status via Microlise API
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+
+        # Configuration
+        API_ENDPOINT="@@option.api_endpoint@@"
+        API_KEY="@@option.api_key@@"
+        ORDER_ID="@@option.order_id@@"
+        STATUS="@@option.status@@"
+        NOTES="@@option.notes@@"
+
+        echo "Updating delivery status for order: $ORDER_ID"
+        echo "New status: $STATUS"
+
+        # Prepare JSON payload
+        payload=$(cat <<EOF
+        {
+          "orderId": "$ORDER_ID",
+          "status": "$STATUS",
+          "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+          "notes": "$NOTES",
+          "updatedBy": "Rundeck-API"
+        }
+        EOF
+        )
+
+        # Make API request
+        response=$(curl -s -X PUT \
+          "${API_ENDPOINT}/deliveries/${ORDER_ID}/status" \
+          -H "Authorization: Bearer ${API_KEY}" \
+          -H "Content-Type: application/json" \
+          -d "$payload")
+
+        # Check response
+        status_code=$(echo "$response" | jq -r '.statusCode // 200')
+
+        if [ "$status_code" = "200" ] || [ "$status_code" = "204" ]; then
+            echo "SUCCESS: Delivery status updated successfully"
+            echo "Response: $response"
+        else
+            echo "ERROR: Failed to update delivery status"
+            echo "Response: $response"
+            exit 1
+        fi
+      scriptInterpreter: /bin/bash
+    keepgoing: false
+    strategy: node-first
+  timeout: 2m
+  uuid: 62c3db2a-41ed-43b6-a992-a875372d0d46
+

@@ -1,0 +1,85 @@
+- description: Comprehensive monthly backup for disaster recovery
+  executionEnabled: true
+  group: Backups
+  id: 7dc0326a-cb98-49db-a442-624952566238
+  loglevel: INFO
+  name: Disaster Recovery Backup - Monthly
+  nodeFilterEditable: false
+  options:
+  - description: Backup storage location
+    name: backup_location
+    required: true
+    value: primary-datacenter
+    values:
+    - primary-datacenter
+    - secondary-datacenter
+    - cloud-storage
+    - offsite-vault
+    valuesListDelimiter: ','
+  - description: Email for backup notifications
+    name: notification_email
+    required: true
+    value: backup-admin@carrefour.com
+  plugins:
+    ExecutionLifecycle: null
+  schedule:
+    dayofmonth:
+      day: '1'
+    month: '*'
+    time:
+      hour: '01'
+      minute: '00'
+      seconds: '0'
+    year: '*'
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - description: Pre-backup system check
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "Running pre-backup system checks..."
+        echo "Checking disk space..."
+        echo "Checking network connectivity to @@option.backup_location@@..."
+        sleep 3
+        echo "All checks passed"
+      scriptInterpreter: /bin/bash
+    - description: Create system snapshot
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "Creating full system snapshot..."
+        echo "This may take several hours..."
+        # Simulate snapshot
+        sleep 10
+        echo "System snapshot created successfully"
+      scriptInterpreter: /bin/bash
+    - description: Backup all critical systems
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "Starting comprehensive backup to @@option.backup_location@@"
+        echo "Backing up databases..."
+        echo "Backing up applications..."
+        echo "Backing up configurations..."
+        echo "Backing up user data..."
+        sleep 15
+        echo "All systems backed up successfully"
+      scriptInterpreter: /bin/bash
+    - description: Verify and catalog backup
+      interpreterArgsQuoted: false
+      script: |-
+        #!/bin/bash
+        echo "Verifying backup integrity..."
+        echo "Creating backup catalog..."
+        echo "Updating disaster recovery documentation..."
+        sleep 5
+        echo "Backup verification completed"
+        echo "Sending notification to @@option.notification_email@@"
+        echo "Monthly disaster recovery backup completed successfully"
+      scriptInterpreter: /bin/bash
+    keepgoing: false
+    strategy: node-first
+  uuid: 7dc0326a-cb98-49db-a442-624952566238
+
