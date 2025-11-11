@@ -1,5 +1,5 @@
 - defaultTab: output
-  description: Check for Online v5
+  description: Check for Online v6
   executionEnabled: true
   group: Admin
   id: f812af9d-8d00-4c6e-8807-ba1effbc8bc3
