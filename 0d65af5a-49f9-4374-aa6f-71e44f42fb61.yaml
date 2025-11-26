@@ -1,0 +1,27 @@
+- defaultTab: nodes
+  description: ''
+  executionEnabled: true
+  id: 0d65af5a-49f9-4374-aa6f-71e44f42fb61
+  loglevel: INFO
+  name: temp
+  nodeFilterEditable: false
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: false
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '1'
+    filter: 'name: Store0 '
+  nodesSelectedByDefault: true
+  plugins:
+    ExecutionLifecycle: {}
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - exec: echo "hello"
+    keepgoing: false
+    strategy: node-first
+  uuid: 0d65af5a-49f9-4374-aa6f-71e44f42fb61
+
